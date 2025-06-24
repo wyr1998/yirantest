@@ -17,6 +17,6 @@ RUN npm run build
 # Prune dev dependencies for production
 RUN npm prune --production
 
-EXPOSE 3000
+EXPOSE 5000
 
 CMD ["npm", "start"] 
