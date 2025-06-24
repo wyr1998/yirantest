@@ -1,12 +1,11 @@
-# Build stage
-FROM node:18-alpine as build
+FROM node:18-alpine
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install ALL dependencies for building
 RUN npm ci
 
 # Copy source code
@@ -15,17 +14,9 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine
+# Prune dev dependencies for production
+RUN npm prune --production
 
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm ci --only=production
-
-COPY --from=build /app/dist ./dist
-
-EXPOSE 5000
+EXPOSE 3000
 
 CMD ["npm", "start"] 
