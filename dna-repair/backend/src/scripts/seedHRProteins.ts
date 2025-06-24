@@ -1,11 +1,17 @@
 import { connectDB } from '../config/database';
 import { Protein } from '../models/Protein';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Set MongoDB URI for Docker environment
+process.env.MONGODB_URI = 'mongodb://admin:password@localhost:27017/dna-repair?authSource=admin';
 
 const hrProteins = [
   {
     name: "BRCA1",
     uniprotId: "P38398",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "Breast cancer type 1 susceptibility protein",
     function: "DNA repair and transcription regulation",
     interactions: ["BRCA2", "RAD51", "BARD1", "PALB2"],
@@ -14,7 +20,7 @@ const hrProteins = [
   {
     name: "BRCA2",
     uniprotId: "P51587",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "Breast cancer type 2 susceptibility protein",
     function: "DNA repair and homologous recombination",
     interactions: ["BRCA1", "RAD51", "PALB2"],
@@ -23,7 +29,7 @@ const hrProteins = [
   {
     name: "RAD51",
     uniprotId: "Q06609",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "DNA repair protein RAD51 homolog 1",
     function: "Homologous recombination and DNA repair",
     interactions: ["BRCA1", "BRCA2", "RAD51B", "RAD51C", "RAD51D"],
@@ -32,7 +38,7 @@ const hrProteins = [
   {
     name: "MRE11",
     uniprotId: "P49959",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "Double-strand break repair protein MRE11",
     function: "DNA double-strand break repair",
     interactions: ["RAD50", "NBS1"],
@@ -41,7 +47,7 @@ const hrProteins = [
   {
     name: "RAD50",
     uniprotId: "Q92878",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "DNA repair protein RAD50",
     function: "DNA double-strand break repair",
     interactions: ["MRE11", "NBS1"],
@@ -50,7 +56,7 @@ const hrProteins = [
   {
     name: "NBS1",
     uniprotId: "O60934",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "Nibrin",
     function: "DNA double-strand break repair",
     interactions: ["MRE11", "RAD50"],
@@ -59,7 +65,7 @@ const hrProteins = [
   {
     name: "ATM",
     uniprotId: "Q13315",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "Serine-protein kinase ATM",
     function: "DNA damage response and cell cycle checkpoint",
     interactions: ["BRCA1", "NBS1", "MRE11"],
@@ -68,7 +74,7 @@ const hrProteins = [
   {
     name: "PALB2",
     uniprotId: "Q86YC2",
-    pathways: ["HR"],
+    pathway: "HR",
     description: "Partner and localizer of BRCA2",
     function: "DNA repair and homologous recombination",
     interactions: ["BRCA1", "BRCA2", "RAD51"],
@@ -80,7 +86,7 @@ const seedDatabase = async () => {
   try {
     await connectDB();
     // Clear existing HR proteins
-    await Protein.deleteMany({ pathways: 'HR' });
+    await Protein.deleteMany({ pathway: 'HR' });
     // Insert new proteins
     await Protein.insertMany(hrProteins);
     console.log('Successfully seeded HR proteins');
