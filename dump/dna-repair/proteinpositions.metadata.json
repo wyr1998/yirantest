@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"proteinId":{"$numberInt":"1"},"pathway":{"$numberInt":"1"}},"name":"proteinId_1_pathway_1","background":true,"unique":true}],"uuid":"6e5fd5bbb8624ad19ff22a8831ffcdca","collectionName":"proteinpositions","type":"collection"}
