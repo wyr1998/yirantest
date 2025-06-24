@@ -24,11 +24,11 @@ RUN npm prune --production
 # Production stage
 FROM nginx:alpine
 
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy built app to nginx
 COPY --from=build /app/build /usr/share/nginx/html
-
-# Copy nginx config (optional)
-# COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 

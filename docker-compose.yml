@@ -22,7 +22,9 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./main-frontend
+    build:
+      context: .
+      dockerfile: main-frontend/Dockerfile
     ports:
       - "80:80"
     depends_on:
