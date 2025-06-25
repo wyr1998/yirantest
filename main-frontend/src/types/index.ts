@@ -3,7 +3,7 @@ export interface Protein {
   name: string;
   uniprotId: string;
   modification?: string;
-  pathways: ('HR' | 'NHEJ' | 'MR')[];
+  pathway: 'HR' | 'NHEJ' | 'MR';
   description: string;
   function: string;
   interactions: string[];

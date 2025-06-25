@@ -88,8 +88,8 @@ const NHEJPathway: React.FC = () => {
           proteinService.getAllProteins(),
           proteinPositionService.getProteinPositions('NHEJ')
         ]);
-        // Filter proteins where pathways includes 'NHEJ'
-        const proteinData = allProteins.filter(p => p.pathways.includes('NHEJ'));
+        // Filter proteins where pathway is 'NHEJ'
+        const proteinData = allProteins.filter(p => p.pathway === 'NHEJ');
         setProteins(proteinData);
         // Create nodes with saved positions or default positions
         const initialNodes: Node[] = proteinData.map((protein, index) => {

@@ -88,8 +88,8 @@ const HRPathway: React.FC = () => {
           proteinService.getAllProteins(),
           proteinPositionService.getProteinPositions('HR')
         ]);
-        // Filter proteins where pathways includes 'HR'
-        const proteinData = allProteins.filter(p => p.pathways.includes('HR'));
+        // Filter proteins where pathway is 'HR'
+        const proteinData = allProteins.filter(p => p.pathway === 'HR');
         setProteins(proteinData);
         // Create nodes with saved positions or default positions
         const initialNodes: Node[] = proteinData.map((protein, index) => {
