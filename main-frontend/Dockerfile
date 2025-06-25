@@ -3,8 +3,8 @@ FROM node:20-alpine as build
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from main-frontend directory
+COPY main-frontend/package*.json ./
 
 # Set npm registry to Tencent Cloud mirror for stable downloads
 RUN npm config set registry http://mirrors.cloud.tencent.com/npm/
@@ -12,8 +12,8 @@ RUN npm config set registry http://mirrors.cloud.tencent.com/npm/
 # Install ALL dependencies for building
 RUN npm install
 
-# Copy source code
-COPY . .
+# Copy source code from main-frontend directory
+COPY main-frontend/ .
 
 # Build the app
 RUN npm run build
