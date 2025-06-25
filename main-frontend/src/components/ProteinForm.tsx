@@ -21,7 +21,7 @@ interface ProteinFormState {
   name: string;
   uniprotId: string;
   modification?: string;
-  pathways: ('HR' | 'NHEJ' | 'MR')[];
+  pathway: 'HR' | 'NHEJ' | 'MR' | '';
   description: string;
   function: string;
   interactions: string[];
@@ -37,7 +37,7 @@ const ProteinForm: React.FC = () => {
     name: '',
     uniprotId: '',
     modification: '',
-    pathways: [],
+    pathway: '',
     description: '',
     function: '',
     interactions: [],
@@ -49,26 +49,24 @@ const ProteinForm: React.FC = () => {
 
   useEffect(() => {
     if (isEditMode) {
-  const fetchProtein = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching protein with ID:', id);
-      const data = await proteinApi.getOne(id!);
+      const fetchProtein = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          console.log('Fetching protein with ID:', id);
+          const data = await proteinApi.getOne(id!);
           setProtein({
             ...data,
-            pathways: Array.isArray(data.pathways)
-              ? (data.pathways.filter((p: any) => !!p) as ('HR' | 'NHEJ' | 'MR')[])
-              : (data.pathways ? [data.pathways] : [])
+            pathway: data.pathway || ''
           });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch protein';
-      console.error('Error details:', error);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch protein';
+          console.error('Error details:', error);
+          setError(errorMessage);
+        } finally {
+          setLoading(false);
+        }
+      };
       fetchProtein();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,9 +79,7 @@ const ProteinForm: React.FC = () => {
       setError(null);
       const proteinToSave = {
         ...protein,
-        pathways: Array.isArray(protein.pathways)
-          ? (protein.pathways.filter((p: any) => !!p) as ('HR' | 'NHEJ' | 'MR')[])
-          : (protein.pathways ? [protein.pathways] : [])
+        pathway: protein.pathway ? (protein.pathway as 'HR' | 'NHEJ' | 'MR') : undefined
       };
       if (isEditMode) {
         await proteinApi.update(id!, proteinToSave);
@@ -178,17 +174,14 @@ const ProteinForm: React.FC = () => {
               helperText="e.g., K20me3 for trimethylation at lysine 20"
             />
             <FormControl fullWidth margin="normal">
-              <InputLabel>Pathways</InputLabel>
+              <InputLabel>Pathway</InputLabel>
               <Select
-                name="pathways"
-                multiple
-                value={protein.pathways || []}
+                name="pathway"
+                value={protein.pathway || ''}
                 onChange={(e) => {
-                  const value = Array.isArray(e.target.value) ? e.target.value : [e.target.value];
-                  setProtein(prev => ({ ...prev, pathways: value as ('HR' | 'NHEJ' | 'MR')[] }));
+                  setProtein(prev => ({ ...prev, pathway: e.target.value as 'HR' | 'NHEJ' | 'MR' }));
                 }}
                 required
-                renderValue={(selected) => (selected as string[]).join(', ')}
               >
                 <MenuItem value="HR">HR</MenuItem>
                 <MenuItem value="NHEJ">NHEJ</MenuItem>

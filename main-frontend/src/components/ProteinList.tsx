@@ -122,7 +122,7 @@ const ProteinList: React.FC = () => {
               <TableRow key={protein._id}>
                 <TableCell>{protein.name}</TableCell>
                 <TableCell>{protein.uniprotId}</TableCell>
-                <TableCell>{protein.pathways?.join(', ')}</TableCell>
+                <TableCell>{protein.pathway}</TableCell>
                 <TableCell>{protein.description}</TableCell>
                 <TableCell>{protein.function}</TableCell>
                 <TableCell>
