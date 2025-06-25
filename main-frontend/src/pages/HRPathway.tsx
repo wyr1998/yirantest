@@ -93,7 +93,7 @@ const HRPathway: React.FC = () => {
         setProteins(proteinData);
         // Create nodes with saved positions or default positions
         const initialNodes: Node[] = proteinData.map((protein, index) => {
-          const savedPosition = positionData[protein._id];
+          const savedPosition = positionData[protein._id] || positionData[protein.name];
           const defaultPosition = { x: 100 + index * 200, y: 100 + index * 100 };
           return {
             id: protein._id,
