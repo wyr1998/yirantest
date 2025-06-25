@@ -10,7 +10,7 @@ COPY package*.json ./
 RUN npm config set registry http://mirrors.cloud.tencent.com/npm/
 
 # Install ALL dependencies for building
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
