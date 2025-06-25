@@ -35,8 +35,8 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-app.use('/proteins', proteinRoutes);
-app.use('/protein-positions', proteinPositionRoutes);
+app.use('/api/proteins', proteinRoutes);
+app.use('/api/protein-positions', proteinPositionRoutes);
 
 // Connect to MongoDB
 connectDB();

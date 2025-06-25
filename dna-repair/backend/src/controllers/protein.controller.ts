@@ -15,8 +15,7 @@ export const getAllProteins = async (req: Request, res: Response) => {
 export const getProteinsByPathway = async (req: Request, res: Response) => {
   try {
     const { pathway } = req.params;
-    // Find proteins where pathways array includes the pathway
-    const proteins = await Protein.find({ pathways: pathway });
+    const proteins = await Protein.find({ pathway });
     res.json(proteins);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching proteins by pathway', error });
