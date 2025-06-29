@@ -6,6 +6,7 @@ import HRPathway from './pages/HRPathway';
 import NHEJPathway from './pages/NHEJPathway';
 import ProteinList from './components/ProteinList';
 import ProteinForm from './components/ProteinForm';
+import ProteinDetail from './pages/ProteinDetail';
 
 function Home() {
   return (
@@ -39,6 +40,7 @@ function DnaRepairApp() {
           <Route path="proteins" element={<ProteinList />} />
           <Route path="proteins/new" element={<ProteinForm />} />
           <Route path="proteins/:id/edit" element={<ProteinForm />} />
+          <Route path="proteins/:id" element={<ProteinDetail />} />
         </Routes>
       </div>
     </div>

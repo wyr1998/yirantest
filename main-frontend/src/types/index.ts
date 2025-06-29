@@ -1,15 +1,4 @@
-export interface Protein {
-  _id: string;
-  name: string;
-  uniprotId: string;
-  modification?: string;
-  pathway: 'HR' | 'NHEJ' | 'MR';
-  description: string;
-  function: string;
-  interactions: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Protein } from './protein';
 
 export interface ProteinNode {
   id: string;

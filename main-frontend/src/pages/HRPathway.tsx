@@ -4,7 +4,7 @@ import 'reactflow/dist/style.css';
 import styled from 'styled-components';
 import { Protein, ProteinPositions } from '../types';
 import ProteinNode from '../components/ProteinNode';
-import { proteinService } from '../services/proteinService';
+import { proteinApi } from '../services/api';
 import { proteinPositionService } from '../services/proteinPositionService';
 
 const PageContainer = styled.div`
@@ -85,7 +85,7 @@ const HRPathway: React.FC = () => {
       try {
         // Fetch all proteins and positions in parallel
         const [allProteins, positionData] = await Promise.all([
-          proteinService.getAllProteins(),
+          proteinApi.getAll(),
           proteinPositionService.getProteinPositions('HR')
         ]);
         // Filter proteins where pathway is 'HR'
