@@ -38,6 +38,20 @@ const Navigation: React.FC = () => {
           >
             Add Protein
           </Button>
+          <Button 
+            color="inherit" 
+            component={RouterLink} 
+            to="/dna-repair/blog"
+          >
+            Blog
+          </Button>
+          <Button 
+            color="inherit" 
+            component={RouterLink} 
+            to="/dna-repair/admin"
+          >
+            Admin
+          </Button>
         </Box>
       </Toolbar>
     </AppBar>

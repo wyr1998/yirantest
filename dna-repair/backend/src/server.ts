@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { proteinRoutes } from './routes/protein.routes';
 import proteinPositionRoutes from './routes/proteinPosition.routes';
+import blogRoutes from './routes/blog.routes';
+import proteinModificationRoutes from './routes/proteinModification.routes';
 import { connectDB } from './config/database';
 
 dotenv.config();
@@ -29,6 +31,27 @@ app.get('/', (req, res) => {
           PUT: '/api/proteins/:id - Update a protein',
           DELETE: '/api/proteins/:id - Delete a protein'
         }
+      },
+      proteinModifications: {
+        base: '/api/protein-modifications',
+        methods: {
+          GET: '/api/protein-modifications/protein/:proteinId - Get all modifications for a protein',
+          POST: '/api/protein-modifications/protein/:proteinId - Create a new modification',
+          PUT: '/api/protein-modifications/:id - Update a modification',
+          DELETE: '/api/protein-modifications/:id - Delete a modification'
+        }
+      },
+      blogs: {
+        base: '/api/blogs',
+        methods: {
+          GET: 'Get all blog posts',
+          POST: 'Create a new blog post',
+          GET_ID: '/api/blogs/:id - Get a specific blog post',
+          PUT: '/api/blogs/:id - Update a blog post',
+          DELETE: '/api/blogs/:id - Delete a blog post',
+          SEARCH: '/api/blogs/search?query=... - Search blog posts',
+          CATEGORY: '/api/blogs/category/:category - Get posts by category'
+        }
       }
     }
   });
@@ -37,6 +60,8 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/proteins', proteinRoutes);
 app.use('/api/protein-positions', proteinPositionRoutes);
+app.use('/api/blogs', blogRoutes);
+app.use('/api/protein-modifications', proteinModificationRoutes);
 
 // Connect to MongoDB
 connectDB();

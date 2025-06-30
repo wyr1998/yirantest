@@ -1,6 +1,9 @@
 import { ProteinPosition, ProteinPositions } from '../types';
 
-const API_BASE_URL = '/api';
+// Use backend URL in development, relative path in production
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:5000/api' 
+  : '/api';
 
 export const proteinPositionService = {
   // Get all protein positions for a pathway

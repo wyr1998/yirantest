@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import ReactFlow, { Node, NodeChange, applyNodeChanges } from 'reactflow';
+import ReactFlow, { Node, NodeChange, applyNodeChanges, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 import styled from 'styled-components';
 import { Protein, ProteinPositions } from '../types';
@@ -113,21 +113,39 @@ const NHEJPathway: React.FC = () => {
   }, []);
 
   // Memoize edges to prevent recreation on every render
-  const edges = useMemo(() => 
-    proteins.flatMap((protein) =>
+  const edges = useMemo(() => {
+    const allEdges: Edge[] = proteins.flatMap((protein) =>
       protein.interactions
-        .filter(targetName => proteins.some(p => p.name === targetName))
-        .map((targetName) => {
-          const targetProtein = proteins.find(p => p.name === targetName);
+        .filter(interaction => proteins.some(p => p._id === interaction.targetId))
+        .map((interaction) => {
+          const targetProtein = proteins.find(p => p._id === interaction.targetId);
           return {
             id: `${protein._id}-${targetProtein?._id}`,
             source: protein._id,
             target: targetProtein?._id || '',
             animated: true,
+            type: interaction.type,
+            data: {
+              description: interaction.description,
+              targetModification: interaction.targetModification
+            }
           };
         })
-    ), [proteins]
-  );
+    );
+    // 去重：只保留一条A-B或B-A
+    const uniqueEdges: Edge[] = [];
+    const seen = new Set();
+    for (const edge of allEdges) {
+      const key1 = `${edge.source}-${edge.target}`;
+      const key2 = `${edge.target}-${edge.source}`;
+      if (!seen.has(key1) && !seen.has(key2)) {
+        uniqueEdges.push(edge);
+        seen.add(key1);
+        seen.add(key2);
+      }
+    }
+    return uniqueEdges;
+  }, [proteins]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {

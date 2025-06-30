@@ -1,258 +1,296 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Box,
-  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
+  TextField,
+  MenuItem,
+  Box,
+  Typography,
+  IconButton,
+  Collapse,
   FormControl,
   InputLabel,
-  Select,
-  MenuItem,
-  Typography,
-  Paper,
-  CircularProgress,
-  Alert,
-  Container
+  Select
 } from '@mui/material';
-import type { Protein } from '../types';
+import { Add as AddIcon, Delete as DeleteIcon, ExpandMore, ExpandLess } from '@mui/icons-material';
+import { Protein, ProteinInteraction } from '../types';
 import { proteinApi } from '../services/api';
+import { proteinModificationService } from '../services/proteinModificationService';
 
-interface ProteinFormState {
-  name: string;
-  uniprotId: string;
-  modification?: string;
-  pathway: 'HR' | 'NHEJ' | 'MR' | '';
-  description: string;
-  function: string;
-  interactions: string[];
-  recruitmentTime?: number;
+interface ProteinFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<Protein, '_id' | 'createdAt' | 'updatedAt'>) => void;
+  initialData?: Partial<Protein>;
 }
 
-const ProteinForm: React.FC = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const isEditMode = Boolean(id);
-
-  const [protein, setProtein] = useState<Partial<ProteinFormState>>({
-    name: '',
-    uniprotId: '',
-    modification: '',
-    pathway: '',
-    description: '',
-    function: '',
-    interactions: [],
-    recruitmentTime: undefined
+export const ProteinForm: React.FC<ProteinFormProps> = ({
+  open,
+  onClose,
+  onSubmit,
+  initialData = {}
+}) => {
+  const [formData, setFormData] = useState<Omit<Protein, '_id' | 'createdAt' | 'updatedAt'>>({
+    name: initialData.name || '',
+    uniprotId: initialData.uniprotId || '',
+    function: initialData.function || '',
+    description: initialData.description || '',
+    pathway: initialData.pathway || 'HR',
+    interactions: initialData.interactions || []
   });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [availableProteins, setAvailableProteins] = useState<Protein[]>([]);
+  const [expandedInteractions, setExpandedInteractions] = useState<boolean[]>([]);
+  const [proteinModifications, setProteinModifications] = useState<{[key: string]: any[]}>({});
 
   useEffect(() => {
-    if (isEditMode) {
-      const fetchProtein = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-          console.log('Fetching protein with ID:', id);
-          const data = await proteinApi.getOne(id!);
-          setProtein({
-            ...data,
-            pathway: data.pathway || ''
-          });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch protein';
-          console.error('Error details:', error);
-          setError(errorMessage);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchProtein();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, id]);
+    loadAvailableProteins();
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const loadAvailableProteins = async () => {
+        try {
+      const proteins = await proteinApi.getAll();
+      setAvailableProteins(proteins);
+        } catch (error) {
+      console.error('Failed to load proteins:', error);
+    }
+  };
+
+  const loadProteinModifications = async (proteinId: string) => {
     try {
-      setLoading(true);
-      setError(null);
-      const proteinToSave = {
-        ...protein,
-        pathway: protein.pathway ? (protein.pathway as 'HR' | 'NHEJ' | 'MR') : undefined
-      };
-      if (isEditMode) {
-        await proteinApi.update(id!, proteinToSave);
-      } else {
-        await proteinApi.create(proteinToSave as Omit<Protein, '_id'>);
-      }
-      navigate('/dna-repair/proteins');
+      const modifications = await proteinModificationService.getByProteinId(proteinId);
+      setProteinModifications(prev => ({
+        ...prev,
+        [proteinId]: modifications
+      }));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save protein';
-      setError(errorMessage);
-      console.error('Error saving protein:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load modifications:', error);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setProtein(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  if (loading && isEditMode) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const handleInteractionChange = (index: number, field: keyof ProteinInteraction, value: any) => {
+    const newInteractions = [...formData.interactions];
+    newInteractions[index] = {
+      ...newInteractions[index],
+      [field]: value
+    };
+    setFormData(prev => ({
+      ...prev,
+      interactions: newInteractions
+    }));
+
+    // 如果选择了新的目标蛋白，加载其修饰信息
+    if (field === 'targetId') {
+      loadProteinModifications(value);
+    }
+  };
+
+  const addInteraction = () => {
+    setFormData(prev => ({
+      ...prev,
+      interactions: [...prev.interactions, { targetId: '', type: '', description: '' }]
+    }));
+    setExpandedInteractions(prev => [...prev, true]);
+  };
+
+  const removeInteraction = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      interactions: prev.interactions.filter((_, i) => i !== index)
+    }));
+    setExpandedInteractions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleInteraction = (index: number) => {
+    setExpandedInteractions(prev => {
+      const newExpanded = [...prev];
+      newExpanded[index] = !newExpanded[index];
+      return newExpanded;
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        {isEditMode ? 'Edit Protein' : 'Add New Protein'}
-      </Typography>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      <Paper sx={{ p: 3 }}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <form onSubmit={handleSubmit}>
-          <Container 
-            sx={{ 
-              maxHeight: '70vh', 
-              overflowY: 'auto',
-              px: 2,
-              '&::-webkit-scrollbar': {
-                width: '8px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: '#f1f1f1',
-                borderRadius: '4px',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#888',
-                borderRadius: '4px',
-                '&:hover': {
-                  background: '#555',
-                },
-              },
-            }}
-          >
+        <DialogTitle>
+          {initialData._id ? 'Edit Protein' : 'Add New Protein'}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             <TextField
-              fullWidth
-              label="Name"
+              label="Protein Name"
               name="name"
-              value={protein.name}
+              value={formData.name}
               onChange={handleChange}
-              margin="normal"
               required
-            />
-            <TextField
               fullWidth
+            />
+
+            <TextField
               label="UniProt ID"
               name="uniprotId"
-              value={protein.uniprotId}
+              value={formData.uniprotId}
               onChange={handleChange}
-              margin="normal"
               required
-              helperText="e.g., P62805 for Histone H4"
-            />
-            <TextField
               fullWidth
-              label="Modification"
-              name="modification"
-              value={protein.modification}
-              onChange={handleChange}
-              margin="normal"
-              helperText="e.g., K20me3 for trimethylation at lysine 20"
             />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Pathway</InputLabel>
-              <Select
-                name="pathway"
-                value={protein.pathway || ''}
-                onChange={(e) => {
-                  setProtein(prev => ({ ...prev, pathway: e.target.value as 'HR' | 'NHEJ' | 'MR' }));
-                }}
-                required
-              >
-                <MenuItem value="HR">HR</MenuItem>
-                <MenuItem value="NHEJ">NHEJ</MenuItem>
-                <MenuItem value="MR">MR</MenuItem>
-              </Select>
-            </FormControl>
+
             <TextField
-              fullWidth
-              label="Description"
-              name="description"
-              value={protein.description}
-              onChange={handleChange}
-              margin="normal"
-              required
-              multiline
-              rows={3}
-            />
-            <TextField
-              fullWidth
               label="Function"
               name="function"
-              value={protein.function}
+              value={formData.function}
               onChange={handleChange}
-              margin="normal"
-              required
+              multiline
+              rows={2}
+              fullWidth
+            />
+
+            <TextField
+              label="Description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
               multiline
               rows={3}
-            />
-            <TextField
               fullWidth
-              label="Interactions (comma-separated)"
-              name="interactions"
-              value={protein.interactions?.join(', ')}
-              onChange={(e) => setProtein(prev => ({
-                ...prev,
-                interactions: e.target.value.split(',').map(s => s.trim())
-              }))}
-              margin="normal"
-              helperText="Enter protein names separated by commas"
             />
+
             <TextField
-              fullWidth
-              label="Recruitment Time (optional)"
-              name="recruitmentTime"
-              type="number"
-              value={protein.recruitmentTime || ''}
+              select
+              label="Pathway"
+              name="pathway"
+              value={formData.pathway}
               onChange={handleChange}
-              margin="normal"
-            />
-          </Container>
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate('/proteins')}
-              disabled={loading}
+              required
+              fullWidth
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading}
+              <MenuItem value="HR">HR</MenuItem>
+              <MenuItem value="NHEJ">NHEJ</MenuItem>
+              <MenuItem value="Both">Both</MenuItem>
+            </TextField>
+
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                Interactions
+                <IconButton size="small" onClick={addInteraction} sx={{ ml: 1 }}>
+                  <AddIcon />
+                </IconButton>
+              </Typography>
+
+              {formData.interactions.map((interaction, index) => (
+                <Box key={index} sx={{ mb: 2, border: '1px solid #e0e0e0', p: 2, borderRadius: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <IconButton size="small" onClick={() => toggleInteraction(index)}>
+                      {expandedInteractions[index] ? <ExpandLess /> : <ExpandMore />}
+                    </IconButton>
+                    <Typography variant="subtitle2">Interaction {index + 1}</Typography>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => removeInteraction(index)}
+                      sx={{ ml: 'auto' }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+
+                  <Collapse in={expandedInteractions[index]}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <FormControl fullWidth>
+                        <InputLabel>Target Protein</InputLabel>
+                        <Select
+                          value={interaction.targetId}
+                          onChange={(e) => handleInteractionChange(index, 'targetId', e.target.value)}
+                          label="Target Protein"
+                          required
+                        >
+                          {availableProteins
+                            .filter(p => p._id !== initialData._id)
+                            .map(protein => (
+                              <MenuItem key={protein._id} value={protein._id}>
+                                {protein.name}
+                              </MenuItem>
+                            ))}
+                        </Select>
+                      </FormControl>
+
+            <TextField
+                        label="Interaction Type"
+                        value={interaction.type || ''}
+                        onChange={(e) => handleInteractionChange(index, 'type', e.target.value)}
+              fullWidth
+                        placeholder="Optional: e.g., binds, phosphorylates, etc."
+                      />
+
+                      {interaction.targetId && proteinModifications[interaction.targetId] && (
+                        <FormControl fullWidth>
+                          <InputLabel>Target Modification</InputLabel>
+                          <Select
+                            value={interaction.targetModification ? 
+                              `${interaction.targetModification.type}-${interaction.targetModification.position}` : 
+                              ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value) {
+                                const [type, position] = value.split('-');
+                                handleInteractionChange(index, 'targetModification', { type, position });
+                              } else {
+                                handleInteractionChange(index, 'targetModification', undefined);
+                              }
+                            }}
+                            label="Target Modification"
+                          >
+                            <MenuItem value="">None</MenuItem>
+                            {proteinModifications[interaction.targetId].map(mod => (
+                              <MenuItem 
+                                key={`${mod.type}-${mod.position}`} 
+                                value={`${mod.type}-${mod.position}`}
             >
-              {loading ? <CircularProgress size={24} /> : (isEditMode ? 'Update' : 'Create')}
-            </Button>
+                                {mod.type} at {mod.position}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+
+                      <TextField
+                        label="Description"
+                        value={interaction.description || ''}
+                        onChange={(e) => handleInteractionChange(index, 'description', e.target.value)}
+                        multiline
+                        rows={2}
+                        fullWidth
+                        placeholder="Optional: Add details about this interaction"
+                      />
+                    </Box>
+                  </Collapse>
+                </Box>
+              ))}
+            </Box>
           </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained" color="primary">
+            {initialData._id ? 'Update' : 'Add'}
+          </Button>
+        </DialogActions>
         </form>
-      </Paper>
-    </Box>
+    </Dialog>
   );
 };
-
-export default ProteinForm; 

@@ -1,12 +1,40 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+const InteractionSchema = new Schema({
+  targetId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Protein',
+    required: true,
+  },
+  type: {
+    type: String,
+    required: false,
+  },
+  description: {
+    type: String,
+    required: false,
+  },
+  targetModification: {
+    position: { type: String, required: false },
+    type: { type: String, required: false },
+  }
+}, { _id: false });
+
 export interface IProtein extends Document {
   name: string;
   uniprotId: string;
-  pathway: 'HR' | 'NHEJ' | 'MR';
+  pathway: 'HR' | 'NHEJ' | 'Both';
   description: string;
   function: string;
-  interactions: string[];
+  interactions: {
+    targetId: mongoose.Types.ObjectId;
+    type?: string;
+    description?: string;
+    targetModification?: {
+      position: string;
+      type: string;
+    };
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,7 +55,7 @@ const ProteinSchema = new Schema<IProtein>(
     pathway: {
       type: String,
       required: true,
-      enum: ['HR', 'NHEJ', 'MR'],
+      enum: ['HR', 'NHEJ', 'Both'],
     },
     description: {
       type: String,
@@ -37,10 +65,7 @@ const ProteinSchema = new Schema<IProtein>(
       type: String,
       required: true,
     },
-    interactions: [{
-      type: String,
-      trim: true,
-    }],
+    interactions: [InteractionSchema],
   },
   {
     timestamps: true,

@@ -31,8 +31,9 @@ const ProteinDetail: React.FC = () => {
         <strong>Pathway:</strong> {protein.pathway}<br />
         <strong>Description:</strong> {protein.description}<br />
         <strong>Function:</strong> {protein.function}<br />
-        <strong>Recruitment Time:</strong> {protein.recruitmentTime !== undefined ? protein.recruitmentTime : 'N/A'}<br />
-        <strong>Interactions:</strong> {protein.interactions?.join(', ')}
+        <strong>Interactions:</strong> {protein.interactions?.map(interaction => 
+          `${interaction.targetId} (${interaction.type})`
+        ).join(', ')}
       </div>
       <Link to="/dna-repair/proteins">Back to List</Link>
     </div>
