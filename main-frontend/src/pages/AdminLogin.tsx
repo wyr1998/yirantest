@@ -96,7 +96,7 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
 
     // 简单的管理员验证（实际项目中应该使用更安全的方式）
-    if (username === 'admin' && password === 'admin123') {
+    if (username === 'admin' && password === '593597884') {
       // 保存登录状态
       localStorage.setItem('adminLoggedIn', 'true');
       localStorage.setItem('adminUsername', username);
@@ -136,9 +136,6 @@ const AdminLogin: React.FC = () => {
             {loading ? '登录中...' : '登录'}
           </LoginButton>
         </Form>
-        <div style={{ marginTop: 20, textAlign: 'center', fontSize: '14px', color: '#666' }}>
-          测试账号: admin / admin123
-        </div>
       </LoginCard>
     </LoginContainer>
   );
