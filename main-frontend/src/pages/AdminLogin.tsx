@@ -96,7 +96,7 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
 
     // 简单的管理员验证（实际项目中应该使用更安全的方式）
-    if (username === 'admin' && password === '593597884') {
+    if (username === 'admin' && password === 'admin123') {
       // 保存登录状态
       localStorage.setItem('adminLoggedIn', 'true');
       localStorage.setItem('adminUsername', username);
