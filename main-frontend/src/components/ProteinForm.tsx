@@ -133,6 +133,7 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
             <TextField
               label="Protein Name"
               name="name"
@@ -141,7 +142,6 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
               required
               fullWidth
             />
-
             <TextField
               label="UniProt ID"
               name="uniprotId"
@@ -150,7 +150,7 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
               required
               fullWidth
             />
-
+            </Box>
             <TextField
               label="Function"
               name="function"
@@ -160,7 +160,6 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
               rows={2}
               fullWidth
             />
-
             <TextField
               label="Description"
               name="description"
@@ -170,7 +169,6 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
               rows={3}
               fullWidth
             />
-
             <TextField
               select
               label="Pathway"
@@ -184,110 +182,73 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
               <MenuItem value="NHEJ">NHEJ</MenuItem>
               <MenuItem value="Both">Both</MenuItem>
             </TextField>
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+            <Box sx={{ mt: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 2, boxShadow: 1 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
                 Interactions
                 <IconButton size="small" onClick={addInteraction} sx={{ ml: 1 }}>
                   <AddIcon />
                 </IconButton>
               </Typography>
-
               {formData.interactions.map((interaction, index) => (
-                <Box key={index} sx={{ mb: 2, border: '1px solid #e0e0e0', p: 2, borderRadius: 1 }}>
+                <Box key={index} sx={{ mb: 2, border: '1px solid #e0e0e0', p: 2, borderRadius: 2, bgcolor: 'white', boxShadow: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <IconButton size="small" onClick={() => toggleInteraction(index)}>
                       {expandedInteractions[index] ? <ExpandLess /> : <ExpandMore />}
                     </IconButton>
-                    <Typography variant="subtitle2">Interaction {index + 1}</Typography>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => removeInteraction(index)}
-                      sx={{ ml: 'auto' }}
-                    >
+                    <Typography variant="subtitle2" sx={{ flexGrow: 1, ml: 1 }}>
+                      Interaction {index + 1}
+                    </Typography>
+                    <IconButton size="small" color="error" onClick={() => removeInteraction(index)}>
                       <DeleteIcon />
                     </IconButton>
                   </Box>
-
                   <Collapse in={expandedInteractions[index]}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 1 }}>
                       <FormControl fullWidth>
                         <InputLabel>Target Protein</InputLabel>
                         <Select
                           value={interaction.targetId}
-                          onChange={(e) => handleInteractionChange(index, 'targetId', e.target.value)}
                           label="Target Protein"
-                          required
+                          onChange={e => handleInteractionChange(index, 'targetId', e.target.value)}
                         >
-                          {availableProteins
-                            .filter(p => p._id !== initialData._id)
-                            .map(protein => (
-                              <MenuItem key={protein._id} value={protein._id}>
-                                {protein.name}
-                              </MenuItem>
+                          {availableProteins.map(p => (
+                            <MenuItem key={p._id} value={p._id}>{p.name}</MenuItem>
                             ))}
                         </Select>
                       </FormControl>
-
-            <TextField
-                        label="Interaction Type"
-                        value={interaction.type || ''}
-                        onChange={(e) => handleInteractionChange(index, 'type', e.target.value)}
-              fullWidth
-                        placeholder="Optional: e.g., binds, phosphorylates, etc."
-                      />
-
-                      {interaction.targetId && proteinModifications[interaction.targetId] && (
-                        <FormControl fullWidth>
-                          <InputLabel>Target Modification</InputLabel>
-                          <Select
-                            value={interaction.targetModification ? 
-                              `${interaction.targetModification.type}-${interaction.targetModification.position}` : 
-                              ''}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value) {
-                                const [type, position] = value.split('-');
-                                handleInteractionChange(index, 'targetModification', { type, position });
-                              } else {
-                                handleInteractionChange(index, 'targetModification', undefined);
-                              }
-                            }}
-                            label="Target Modification"
-                          >
-                            <MenuItem value="">None</MenuItem>
-                            {proteinModifications[interaction.targetId].map(mod => (
-                              <MenuItem 
-                                key={`${mod.type}-${mod.position}`} 
-                                value={`${mod.type}-${mod.position}`}
-            >
-                                {mod.type} at {mod.position}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      )}
-
                       <TextField
-                        label="Description"
-                        value={interaction.description || ''}
-                        onChange={(e) => handleInteractionChange(index, 'description', e.target.value)}
-                        multiline
-                        rows={2}
+                        select
+                        label="Type"
+                        value={interaction.type}
+                        onChange={e => handleInteractionChange(index, 'type', e.target.value)}
                         fullWidth
-                        placeholder="Optional: Add details about this interaction"
-                      />
+                      >
+                        <MenuItem value="activation">Activation</MenuItem>
+                        <MenuItem value="inhibition">Inhibition</MenuItem>
+                        <MenuItem value="binding">Binding</MenuItem>
+                        <MenuItem value="modification">Modification</MenuItem>
+                      </TextField>
                     </Box>
+                    <TextField
+                      label="Description"
+                      value={interaction.description}
+                      onChange={e => handleInteractionChange(index, 'description', e.target.value)}
+                      multiline
+                      rows={2}
+                      fullWidth
+                    />
                   </Collapse>
                 </Box>
               ))}
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, justifyContent: 'flex-end', gap: 2 }}>
+          <Button onClick={onClose} color="inherit" variant="outlined">
+            Cancel
+          </Button>
           <Button type="submit" variant="contained" color="primary">
-            {initialData._id ? 'Update' : 'Add'}
+            {initialData._id ? 'Save Changes' : 'Add Protein'}
           </Button>
         </DialogActions>
         </form>

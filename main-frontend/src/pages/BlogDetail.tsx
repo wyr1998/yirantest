@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { BlogPost } from '../types';
 import { blogService } from '../services/blogService';
 import MarkdownIt from 'markdown-it';
+import { Box } from '@mui/material';
 
 const PageContainer = styled.div`
   max-width: 1200px;
@@ -274,14 +275,14 @@ const BlogDetail: React.FC = () => {
 
   if (error || !post) {
     return (
-      <PageContainer>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 3 } }}>
         <BackButton to="/dna-repair/blog">
           ← Back to Blog
         </BackButton>
         <ErrorMessage>
           {error || 'Post not found'}
         </ErrorMessage>
-      </PageContainer>
+      </Box>
     );
   }
 
@@ -289,7 +290,7 @@ const BlogDetail: React.FC = () => {
   const headings = extractHeadings(post.content, post.id);
 
   return (
-    <PageContainer>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 3 } }}>
       <BackButton to="/dna-repair/blog">
         ← Back to Blog
       </BackButton>
@@ -329,7 +330,7 @@ const BlogDetail: React.FC = () => {
           </ArticleContent>
         </MainContent>
       </Layout>
-    </PageContainer>
+    </Box>
   );
 };
 

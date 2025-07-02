@@ -14,31 +14,6 @@ const PageContainer = styled.div`
   flex-direction: column;
 `;
 
-const Header = styled.div`
-  padding: 20px;
-  background: #2196f3;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  h1 {
-    margin: 0;
-  }
-`;
-
-const ResetButton = styled.button`
-  background: #ff5722;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  &:hover {
-    background: #e64a19;
-  }
-`;
-
 const ContentContainer = styled.div`
   flex: 1;
   display: flex;
@@ -181,16 +156,6 @@ const NHEJPathway: React.FC = () => {
     setSelectedProtein(node.data as Protein);
   };
 
-  const handleResetPositions = async () => {
-    try {
-      await proteinPositionService.resetPathwayPositions('NHEJ');
-      // Reload the page to reset positions
-      window.location.reload();
-    } catch (error) {
-      console.error('Failed to reset positions:', error);
-    }
-  };
-
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -201,12 +166,6 @@ const NHEJPathway: React.FC = () => {
 
   return (
     <PageContainer>
-      <Header>
-        <h1>Non-Homologous End Joining Pathway</h1>
-        <ResetButton onClick={handleResetPositions}>
-          Reset Positions
-        </ResetButton>
-      </Header>
       <ContentContainer>
         <FlowContainer>
           <ReactFlow
@@ -229,7 +188,14 @@ const NHEJPathway: React.FC = () => {
               <p>{selectedProtein.description}</p>
               <p><strong>Function:</strong> {selectedProtein.function}</p>
               <p><strong>UniProt ID:</strong> {selectedProtein.uniprotId}</p>
-              <p><strong>Interactions:</strong> {selectedProtein.interactions.join(', ')}</p>
+              <p><strong>Interactions:</strong> {selectedProtein.interactions.length === 0 ? 'None' : selectedProtein.interactions.map((i, idx) => {
+                const target = proteins.find(p => p._id === i.targetId);
+                return (
+                  <span key={idx}>
+                    {i.type}{target ? ` → ${target.name}` : ''}{idx < selectedProtein.interactions.length - 1 ? ', ' : ''}
+                  </span>
+                );
+              })}</p>
             </ProteinDetails>
           ) : (
             <p>Click on a protein to see details</p>

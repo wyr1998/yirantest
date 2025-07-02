@@ -102,7 +102,7 @@ function DnaRepairApp() {
   return (
     <div className="main-content">
       <Navigation />
-      <div style={{ marginTop: 24 }}>
+      <div>
         <Routes>
           <Route path="" element={<HRPathway />} />
           <Route path="nhej" element={<NHEJPathway />} />

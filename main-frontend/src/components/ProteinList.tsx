@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper,
-  Button,
-  Typography,
   Box,
+  Typography,
+  Button,
   CircularProgress,
   Alert,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  Chip,
+  Stack
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import type { Protein } from '../types';
@@ -37,11 +36,9 @@ const ProteinList: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await proteinApi.getAll();
-      console.log('Fetched proteins:', data);
       setProteins(data);
     } catch (error) {
       setError('Failed to fetch proteins');
-      console.error('Error fetching proteins:', error);
     } finally {
       setLoading(false);
     }
@@ -54,17 +51,15 @@ const ProteinList: React.FC = () => {
 
   const handleDeleteConfirm = async () => {
     if (!proteinToDelete) return;
-
     try {
       setLoading(true);
       setError(null);
       await proteinApi.delete(proteinToDelete._id);
-      await fetchProteins(); // Refresh the list
+      await fetchProteins();
       setDeleteDialogOpen(false);
       setProteinToDelete(null);
     } catch (error) {
       setError('Failed to delete protein');
-      console.error('Error deleting protein:', error);
     } finally {
       setLoading(false);
     }
@@ -92,7 +87,7 @@ const ProteinList: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1, sm: 3 } }}>
       <Typography variant="h4" gutterBottom>
         DNA Repair Proteins
       </Typography>
@@ -105,32 +100,30 @@ const ProteinList: React.FC = () => {
       >
         Add New Protein
       </Button>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>UniProt ID</TableCell>
-              <TableCell>Pathway</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Function</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      <Grid container spacing={3}>
             {proteins.map((protein) => (
-              <TableRow key={protein._id}>
-                <TableCell>{protein.name}</TableCell>
-                <TableCell>{protein.uniprotId}</TableCell>
-                <TableCell>{protein.pathway}</TableCell>
-                <TableCell>{protein.description}</TableCell>
-                <TableCell>{protein.function}</TableCell>
-                <TableCell>
+          <Grid item xs={12} sm={6} md={4} key={protein._id}>
+            <Card elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Stack direction="row" spacing={1} mb={1}>
+                  <Chip label={protein.pathway} color="primary" size="small" />
+                  {protein.uniprotId && <Chip label={protein.uniprotId} size="small" />}
+                </Stack>
+                <Typography variant="h6" component="div" gutterBottom>
+                  {protein.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom noWrap>
+                  {protein.description}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <strong>Function:</strong> {protein.function}
+                </Typography>
+              </CardContent>
+              <CardActions>
                   <Button 
                     component={Link} 
                     to={`/dna-repair/proteins/${protein._id}`}
                     size="small"
-                    sx={{ mr: 1 }}
                   >
                     View
                   </Button>
@@ -139,8 +132,6 @@ const ProteinList: React.FC = () => {
                     to={`/dna-repair/proteins/${protein._id}/edit`}
                     size="small"
                     color="primary"
-                    sx={{ mr: 1 }}
-                    onClick={() => console.log('Editing protein:', protein)}
                   >
                     Edit
                   </Button>
@@ -151,18 +142,13 @@ const ProteinList: React.FC = () => {
                   >
                     Delete
                   </Button>
-                </TableCell>
-              </TableRow>
+              </CardActions>
+            </Card>
+          </Grid>
             ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
+      </Grid>
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-      >
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           Are you sure you want to delete {proteinToDelete?.name}?

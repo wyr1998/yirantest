@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { BlogPost } from '../types';
 import { blogService } from '../services/blogService';
+import { Box } from '@mui/material';
 
 const EditorContainer = styled.div`
   width: 100vw;
@@ -332,6 +333,7 @@ const BlogEditor: React.FC = () => {
   };
 
   return (
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 3 } }}>
     <EditorContainer>
       <Header>
         <Title>{id === 'new' ? '写新文章' : '编辑文章'}</Title>
@@ -422,6 +424,7 @@ const BlogEditor: React.FC = () => {
         </ContentEditorContainer>
       )}
     </EditorContainer>
+    </Box>
   );
 };
 
