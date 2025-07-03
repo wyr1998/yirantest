@@ -136,8 +136,32 @@ function App() {
           <Route path="/earth-environment" element={<Placeholder title="Earth Environment" />} />
           <Route path="/maths" element={<Placeholder title="Maths" />} />
         </Routes>
-        <footer className="footer">
-          <span>© {new Date().getFullYear()} Yiran. All rights reserved.</span>
+        <footer className="footer" style={{ fontSize: '14px', color: '#666', padding: '20px 0', textAlign: 'center' }}>
+          <div>© {new Date().getFullYear()} Yiran. All rights reserved.</div>
+  
+          <div style={{ marginTop: '10px' }}>
+            <span style={{ marginRight: '16px' }}>
+                <a 
+                  href="https://beian.miit.gov.cn/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: 'none' }}
+                >
+                  ICP备案：辽ICP备2025059283号
+              </a>
+            </span>
+    
+            <span>
+              <a 
+                href="https://beian.mps.gov.cn/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: '#666', textDecoration: 'none' }}
+              >
+                公安备案：辽公网安备XXXXXXXXXX号
+              </a>
+            </span>
+          </div>
         </footer>
       </div>
     </Router>
