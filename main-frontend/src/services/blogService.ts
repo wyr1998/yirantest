@@ -1,38 +1,16 @@
 import { BlogPost, BlogPostMeta } from '../types';
 
-// 从localStorage获取博客数据，如果没有则返回空数组
-const getBlogPostsFromStorage = (): BlogPost[] => {
-  try {
-    const stored = localStorage.getItem('blogPosts');
-    if (stored) {
-      return JSON.parse(stored);
-    } else {
-      // 首次访问时，返回空数组
-      return [];
-    }
-  } catch (error) {
-    console.error('Error reading from localStorage:', error);
-    return [];
-  }
-};
-
-// 保存博客数据到localStorage
-const saveBlogPostsToStorage = (posts: BlogPost[]): void => {
-  try {
-    localStorage.setItem('blogPosts', JSON.stringify(posts));
-  } catch (error) {
-    console.error('Error saving to localStorage:', error);
-  }
-};
+const API_BASE = '/api/blogs';
 
 export const blogService = {
   // 获取所有博客文章的元数据
   getAllPosts: async (): Promise<BlogPostMeta[]> => {
-    // 模拟API调用延迟
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const posts = getBlogPostsFromStorage();
+    const res = await fetch(API_BASE);
+    if (!res.ok) throw new Error('Failed to fetch blog posts');
+    const posts: BlogPost[] = await res.json();
+    // Map to BlogPostMeta
     return posts.map(post => ({
-      id: post.id,
+      id: post._id || post.id,
       title: post.title,
       excerpt: post.excerpt,
       author: post.author,
@@ -44,83 +22,80 @@ export const blogService = {
 
   // 根据ID获取特定博客文章
   getPostById: async (id: string): Promise<BlogPost | null> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const posts = getBlogPostsFromStorage();
-    return posts.find(post => post.id === id) || null;
+    const res = await fetch(`${API_BASE}/${id}`);
+    if (!res.ok) return null;
+    const post = await res.json();
+    // Normalize _id to id
+    return { ...post, id: post._id || post.id };
   },
 
   // 根据分类获取博客文章
   getPostsByCategory: async (category: string): Promise<BlogPostMeta[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const posts = getBlogPostsFromStorage();
-    return posts
-      .filter(post => post.category === category)
-      .map(post => ({
-        id: post.id,
-        title: post.title,
-        excerpt: post.excerpt,
-        author: post.author,
-        publishDate: post.publishDate,
-        tags: post.tags,
-        category: post.category
-      }));
+    const res = await fetch(`${API_BASE}/category/${category}`);
+    if (!res.ok) throw new Error('Failed to fetch posts by category');
+    const posts: BlogPost[] = await res.json();
+    return posts.map(post => ({
+      id: post._id || post.id,
+      title: post.title,
+      excerpt: post.excerpt,
+      author: post.author,
+      publishDate: post.publishDate,
+      tags: post.tags,
+      category: post.category
+    }));
   },
 
   // 搜索博客文章
   searchPosts: async (query: string): Promise<BlogPostMeta[]> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    const posts = getBlogPostsFromStorage();
-    const lowercaseQuery = query.toLowerCase();
-    return posts
-      .filter(post => 
-        post.title.toLowerCase().includes(lowercaseQuery) ||
-        post.content.toLowerCase().includes(lowercaseQuery) ||
-        post.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
-      )
-      .map(post => ({
-        id: post.id,
-        title: post.title,
-        excerpt: post.excerpt,
-        author: post.author,
-        publishDate: post.publishDate,
-        tags: post.tags,
-        category: post.category
-      }));
+    const res = await fetch(`${API_BASE}/search?query=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error('Failed to search blog posts');
+    const posts: BlogPost[] = await res.json();
+    return posts.map(post => ({
+      id: post._id || post.id,
+      title: post.title,
+      excerpt: post.excerpt,
+      author: post.author,
+      publishDate: post.publishDate,
+      tags: post.tags,
+      category: post.category
+    }));
   },
 
   // 创建新博客文章
   createPost: async (post: BlogPost): Promise<BlogPost> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const posts = getBlogPostsFromStorage();
-    posts.push(post);
-    saveBlogPostsToStorage(posts);
-    return post;
+    const res = await fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(post)
+    });
+    if (!res.ok) throw new Error('Failed to create blog post');
+    const saved = await res.json();
+    return { ...saved, id: saved._id || saved.id };
   },
 
   // 更新博客文章
   updatePost: async (id: string, updatedPost: Partial<BlogPost>): Promise<BlogPost> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const posts = getBlogPostsFromStorage();
-    const index = posts.findIndex(post => post.id === id);
-    if (index !== -1) {
-      posts[index] = { ...posts[index], ...updatedPost };
-      saveBlogPostsToStorage(posts);
-      return posts[index];
-    }
-    throw new Error('Post not found');
+    const res = await fetch(`${API_BASE}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedPost)
+    });
+    if (!res.ok) throw new Error('Failed to update blog post');
+    const updated = await res.json();
+    return { ...updated, id: updated._id || updated.id };
   },
 
   // 删除博客文章
   deletePost: async (id: string): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const posts = getBlogPostsFromStorage();
-    const filteredPosts = posts.filter(post => post.id !== id);
-    saveBlogPostsToStorage(filteredPosts);
+    const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete blog post');
   },
 
   // 获取所有博客文章（带content）
   getAllPostsWithContent: async (): Promise<BlogPost[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return getBlogPostsFromStorage();
+    const res = await fetch(API_BASE);
+    if (!res.ok) throw new Error('Failed to fetch blog posts');
+    const posts: BlogPost[] = await res.json();
+    return posts.map(post => ({ ...post, id: post._id || post.id }));
   }
 }; 

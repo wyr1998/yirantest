@@ -1,4 +1,5 @@
 export interface BlogPost {
+  _id?: string;
   id: string;
   title: string;
   content: string;
@@ -10,6 +11,7 @@ export interface BlogPost {
 }
 
 export interface BlogPostMeta {
+  _id?: string;
   id: string;
   title: string;
   excerpt: string;
