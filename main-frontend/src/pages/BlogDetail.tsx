@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { BlogPost } from '../types';
 import { blogService } from '../services/blogService';
-import MarkdownIt from 'markdown-it';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import { Box } from '@mui/material';
 
 const PageContainer = styled.div`
@@ -208,38 +208,6 @@ const ErrorMessage = styled.div`
   font-size: 1.1em;
 `;
 
-const md = new MarkdownIt();
-
-function extractHeadings(markdown: string, blogId: string) {
-  const tokens = md.parse(markdown, {});
-  const headings: { level: number; content: string; id: string }[] = [];
-  tokens.forEach((token, idx) => {
-    if (token.type === 'heading_open') {
-      const level = parseInt(token.tag.replace('h', ''));
-      const content = tokens[idx + 1]?.content || '';
-      const id = `blog-${blogId}-h${level}-${content.replace(/\s+/g, '-').toLowerCase()}`;
-      headings.push({ level, content, id });
-    }
-  });
-  return headings;
-}
-
-function renderMarkdownWithHeadingIds(markdown: string, blogId: string) {
-  const defaultRender = md.renderer.rules.heading_open || function(tokens, idx, options, env, self) {
-    return self.renderToken(tokens, idx, options);
-  };
-  md.renderer.rules.heading_open = function(tokens, idx, options, env, self) {
-    const token = tokens[idx];
-    const level = token.tag;
-    const content = tokens[idx + 1]?.content || '';
-    const id = `blog-${blogId}-${level}-${content.replace(/\s+/g, '-').toLowerCase()}`;
-    token.attrs = token.attrs || [];
-    token.attrs.push(['id', id]);
-    return defaultRender(tokens, idx, options, env, self);
-  };
-  return md.render(markdown);
-}
-
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -286,29 +254,12 @@ const BlogDetail: React.FC = () => {
     );
   }
 
-  // 生成目录
-  const headings = extractHeadings(post.content, post.id);
-
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 3 } }}>
       <BackButton to="/dna-repair/blog">
         ← Back to Blog
       </BackButton>
       <Layout>
-        {/* 目录区 */}
-        {headings.length > 0 && (
-          <TOCWrapper>
-            <TOCTitle>目录</TOCTitle>
-            <TOCList>
-              {headings.map(h => (
-                <TOCItem key={h.id} $level={h.level}>
-                  <a href={`#${h.id}`}>{h.content}</a>
-                </TOCItem>
-              ))}
-            </TOCList>
-          </TOCWrapper>
-        )}
-        {/* 正文区 */}
         <MainContent>
           <ArticleHeader>
             <Title>{post.title}</Title>
@@ -326,7 +277,7 @@ const BlogDetail: React.FC = () => {
             </Tags>
           </ArticleHeader>
           <ArticleContent>
-            <div dangerouslySetInnerHTML={{ __html: renderMarkdownWithHeadingIds(post.content, post.id) }} />
+            <MarkdownRenderer content={post.content} />
           </ArticleContent>
         </MainContent>
       </Layout>

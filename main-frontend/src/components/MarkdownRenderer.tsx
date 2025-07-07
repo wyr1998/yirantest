@@ -7,124 +7,35 @@ const MarkdownContainer = styled.div`
   word-break: break-all;
   overflow-wrap: break-word;
   white-space: pre-line;
-  
-  h1 {
-    font-size: 2.5em;
-    color: #2196f3;
-    margin-bottom: 0.5em;
-    border-bottom: 2px solid #2196f3;
-    padding-bottom: 0.3em;
-  }
-  
-  h2 {
-    font-size: 2em;
-    color: #1976d2;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 0.2em;
-  }
-  
-  h3 {
-    font-size: 1.5em;
-    color: #1565c0;
-    margin-top: 1.2em;
-    margin-bottom: 0.4em;
-  }
-  
-  h4 {
-    font-size: 1.2em;
-    color: #0d47a1;
-    margin-top: 1em;
-    margin-bottom: 0.3em;
-  }
-  
-  p {
-    margin-bottom: 1em;
-    text-align: justify;
-  }
-  
-  ul, ol {
-    margin-bottom: 1em;
-    padding-left: 2em;
-  }
-  
-  li {
-    margin-bottom: 0.5em;
-  }
-  
-  strong {
-    font-weight: bold;
-    color: #d32f2f;
-  }
-  
-  em {
-    font-style: italic;
-    color: #388e3c;
-  }
-  
-  code {
-    background-color: #f5f5f5;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
-  }
-  
-  pre {
-    background-color: #f8f8f8;
-    padding: 1em;
-    border-radius: 5px;
-    overflow-x: auto;
-    border-left: 4px solid #2196f3;
-    margin: 1em 0;
-  }
-  
-  pre code {
-    background: none;
-    padding: 0;
-  }
-  
-  blockquote {
-    border-left: 4px solid #2196f3;
-    padding-left: 1em;
-    margin: 1em 0;
-    font-style: italic;
-    color: #666;
-  }
-  
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 1em 0;
-  }
-  
-  th, td {
-    border: 1px solid #ddd;
-    padding: 0.5em;
-    text-align: left;
-  }
-  
-  th {
-    background-color: #f5f5f5;
-    font-weight: bold;
-  }
-  
-  a {
-    color: #2196f3;
-    text-decoration: none;
-    
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-  
-  img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 5px;
-    margin: 1em 0;
-  }
+`;
+
+// Tooltip styles for inline HTML
+const tooltipStyle = `
+  position: relative;
+  cursor: pointer;
+  color: #1976d2;
+  font-size: 0.85em;
+  user-select: none;
+`;
+const tooltipBoxStyle = `
+  display: none;
+  position: absolute;
+  top: 1.8em;
+  left: 0;
+  background: #fff;
+  color: #333;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  padding: 0.5em 1em;
+  font-size: 0.95em;
+  z-index: 100;
+  min-width: 200px;
+  max-width: 350px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  white-space: normal;
+`;
+const tooltipHover = `
+  .reference-marker:hover .reference-tooltip { display: block; }
 `;
 
 interface MarkdownRendererProps {
@@ -164,13 +75,39 @@ const defaultParseMarkdown = (text: string): string => {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 };
 
+function replaceReferencesInHtml(html: string, refs: string[]): string {
+  return html.replace(/\[\[REFERENCE_(\d+)\]\]/g, (_, n) => {
+    const idx = parseInt(n, 10) - 1;
+    const refText = refs[idx] || '';
+    return `<sup class="reference-marker">[${parseInt(n, 10)}]<span class="reference-tooltip">${refText}</span></sup>`;
+  });
+}
+
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, parseMarkdown }) => {
-  const htmlContent = (parseMarkdown ?? defaultParseMarkdown)(content);
+  // Step 1: Extract references and replace with placeholder tokens
+  const refRegex = /\(([^()\n]{10,})\)/g;
+  let refs: string[] = [];
+  let replaced = content;
+  let match: RegExpExecArray | null;
+  let refNum = 1;
+  while ((match = refRegex.exec(content)) !== null) {
+    const refText = match[1].trim();
+    if (refText.includes(',') && refText.split(' ').length > 2) {
+      refs.push(refText);
+      replaced = replaced.replace(match[0], `[[REFERENCE_${refNum}]]`);
+      refNum++;
+    }
+  }
+
+  // Step 2: Parse markdown
+  const html = (parseMarkdown ?? defaultParseMarkdown)(replaced);
+  // Step 3: Replace placeholders with reference markers
+  const htmlWithRefs = replaceReferencesInHtml(html, refs);
 
   return (
-    <MarkdownContainer 
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
-    />
+    <MarkdownContainer>
+      <span dangerouslySetInnerHTML={{ __html: htmlWithRefs }} />
+    </MarkdownContainer>
   );
 };
 

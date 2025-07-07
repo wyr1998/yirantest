@@ -118,3 +118,32 @@
     font-size: 1rem;
   }
 }
+
+.reference-marker {
+  position: relative;
+  cursor: pointer;
+  color: #1976d2;
+  font-size: 0.85em;
+  user-select: none;
+  vertical-align: super;
+}
+.reference-tooltip {
+  display: none;
+  position: absolute;
+  top: 1.8em;
+  left: 0;
+  background: #fff;
+  color: #333;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  padding: 0.5em 1em;
+  font-size: 0.95em;
+  z-index: 100;
+  min-width: 200px;
+  max-width: 350px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  white-space: normal;
+}
+.reference-marker:hover .reference-tooltip {
+  display: block;
+}
