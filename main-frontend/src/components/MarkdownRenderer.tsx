@@ -13,7 +13,7 @@ const MarkdownContainer = styled.div`
 const tooltipStyle = `
   position: relative;
   cursor: pointer;
-  color: #1976d2;
+    color: #1976d2;
   font-size: 0.85em;
   user-select: none;
 `;

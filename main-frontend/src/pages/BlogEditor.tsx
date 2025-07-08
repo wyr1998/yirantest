@@ -271,13 +271,13 @@ const BlogEditor: React.FC = () => {
       try {
         const currentUser = await authService.verifyToken();
         if (!currentUser) {
-          navigate('/dna-repair/admin/login');
-          return;
-        }
+      navigate('/dna-repair/admin/login');
+      return;
+    }
         setUser(currentUser);
-        if (id && id !== 'new') {
-          fetchPost();
-        }
+    if (id && id !== 'new') {
+      fetchPost();
+    }
       } catch (error) {
         console.error('Auth check failed:', error);
         navigate('/dna-repair/admin/login');

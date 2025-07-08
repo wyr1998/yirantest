@@ -25,8 +25,8 @@ export const blogService = {
     try {
       const response = await api.get(`${API_BASE}/${id}`);
       const post = response.data;
-      // Normalize _id to id
-      return { ...post, id: post._id || post.id };
+    // Normalize _id to id
+    return { ...post, id: post._id || post.id };
     } catch (error) {
       return null;
     }
