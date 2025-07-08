@@ -123,4 +123,52 @@ router.post('/setup', async (req, res) => {
   }
 });
 
+// Change password route (requires authentication)
+router.post('/change-password', auth, async (req: AuthRequest, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+    }
+
+    // Find admin by ID from token
+    const admin = await Admin.findById(req.user?.id);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await admin.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Update password
+    admin.password = newPassword;
+    await admin.save();
+
+    // Generate new token
+    const newToken = admin.generateAuthToken();
+
+    res.json({
+      message: 'Password changed successfully',
+      token: newToken,
+      user: {
+        id: admin._id,
+        username: admin.username,
+        role: admin.role,
+        email: admin.email
+      }
+    });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 export default router; 

@@ -11,10 +11,10 @@ const router = express_1.default.Router();
 router.get('/', protein_controller_1.getAllProteins);
 // Get proteins by pathway
 router.get('/pathway/:pathway', protein_controller_1.getProteinsByPathway);
-// Get a single protein by ID
-router.get('/:id', protein_controller_1.getProteinById);
 // Create a new protein
 router.post('/', protein_controller_1.createProtein);
+// Get a single protein by ID
+router.get('/:id', protein_controller_1.getProteinById);
 // Update a protein
 router.put('/:id', protein_controller_1.updateProtein);
 // Delete a protein

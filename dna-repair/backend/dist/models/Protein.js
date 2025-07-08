@@ -35,6 +35,25 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Protein = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
+const InteractionSchema = new mongoose_1.Schema({
+    targetId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Protein',
+        required: true,
+    },
+    type: {
+        type: String,
+        required: false,
+    },
+    description: {
+        type: String,
+        required: false,
+    },
+    targetModification: {
+        position: { type: String, required: false },
+        type: { type: String, required: false },
+    }
+}, { _id: false });
 const ProteinSchema = new mongoose_1.Schema({
     name: {
         type: String,
@@ -50,7 +69,7 @@ const ProteinSchema = new mongoose_1.Schema({
     pathway: {
         type: String,
         required: true,
-        enum: ['HR', 'NHEJ', 'MR'],
+        enum: ['HR', 'NHEJ', 'Both'],
     },
     description: {
         type: String,
@@ -60,10 +79,7 @@ const ProteinSchema = new mongoose_1.Schema({
         type: String,
         required: true,
     },
-    interactions: [{
-            type: String,
-            trim: true,
-        }],
+    interactions: [InteractionSchema],
 }, {
     timestamps: true,
 });

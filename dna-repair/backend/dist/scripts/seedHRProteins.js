@@ -8,9 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const database_1 = require("../config/database");
 const Protein_1 = require("../models/Protein");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+// Set MongoDB URI for Docker environment
+process.env.MONGODB_URI = 'mongodb://admin:password@mongodb:27017/dna-repair?authSource=admin';
 const hrProteins = [
     {
         name: "BRCA1",
