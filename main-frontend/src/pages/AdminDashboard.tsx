@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { BlogPostMeta } from '../types';
 import { blogService } from '../services/blogService';
 import { authService } from '../services/authService';
+import PasswordChangeModal from '../components/PasswordChangeModal';
 
 const DashboardContainer = styled.div`
   max-width: 1200px;
@@ -47,6 +48,20 @@ const LogoutButton = styled.button`
   
   &:hover {
     background: #d32f2f;
+  }
+`;
+
+const PasswordChangeButton = styled.button`
+  background: #ff9800;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  
+  &:hover {
+    background: #f57c00;
   }
 `;
 
@@ -170,6 +185,7 @@ const AdminDashboard: React.FC = () => {
   const [posts, setPosts] = useState<BlogPostMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -241,6 +257,9 @@ const AdminDashboard: React.FC = () => {
         <Title>管理后台</Title>
         <HeaderActions>
           <WelcomeText>欢迎，{getUsername()}！</WelcomeText>
+          <PasswordChangeButton onClick={() => setShowPasswordModal(true)}>
+            修改密码
+          </PasswordChangeButton>
           <NewPostButton to="/dna-repair/admin/new-post">写新文章</NewPostButton>
           <LogoutButton onClick={handleLogout}>退出登录</LogoutButton>
         </HeaderActions>
@@ -300,6 +319,11 @@ const AdminDashboard: React.FC = () => {
           )}
         </PostsList>
       </PostsSection>
+
+      <PasswordChangeModal 
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </DashboardContainer>
   );
 };

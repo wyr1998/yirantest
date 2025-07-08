@@ -124,6 +124,28 @@ class AuthService {
       }
     }
   }
+
+  // Change password
+  async changePassword(currentPassword: string, newPassword: string): Promise<LoginResponse> {
+    try {
+      const response = await api.post('/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+      const { token, user } = response.data;
+      
+      this.setAuth(token, user);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        throw new Error('当前密码不正确');
+      } else if (error.response?.status === 400) {
+        throw new Error('新密码至少需要6个字符');
+      } else {
+        throw new Error('密码修改失败，请重试');
+      }
+    }
+  }
 }
 
 export const authService = new AuthService(); 
