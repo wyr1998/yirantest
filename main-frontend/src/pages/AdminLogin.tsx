@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { authService } from '../services/authService';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -83,29 +84,37 @@ const ErrorMessage = styled.div`
   font-size: 14px;
 `;
 
+const SuccessMessage = styled.div`
+  color: #2e7d32;
+  text-align: center;
+  font-size: 14px;
+`;
+
 const AdminLogin: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
-    // 简单的管理员验证
-    if (username === 'admin' && password === 'admin123') {
-      // 保存登录状态
-      localStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminUsername', username);
-      navigate('/dna-repair/admin');
-    } else {
-      setError('用户名或密码错误');
+    try {
+      await authService.login({ username, password });
+      setSuccess('登录成功！正在跳转...');
+      setTimeout(() => {
+        navigate('/dna-repair/admin');
+      }, 1000);
+    } catch (error: any) {
+      setError(error.message || '登录失败，请重试');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
@@ -120,6 +129,7 @@ const AdminLogin: React.FC = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              disabled={loading}
             />
           </InputGroup>
           <InputGroup>
@@ -129,9 +139,11 @@ const AdminLogin: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
             />
           </InputGroup>
           {error && <ErrorMessage>{error}</ErrorMessage>}
+          {success && <SuccessMessage>{success}</SuccessMessage>}
           <LoginButton type="submit" disabled={loading}>
             {loading ? '登录中...' : '登录'}
           </LoginButton>

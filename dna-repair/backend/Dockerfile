@@ -19,4 +19,12 @@ RUN npm run build
 
 EXPOSE 5000
 
-CMD ["npm", "start"] 
+# Create startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'echo "Setting up admin user..."' >> /app/start.sh && \
+    echo 'npm run setup:admin' >> /app/start.sh && \
+    echo 'echo "Starting server..."' >> /app/start.sh && \
+    echo 'npm start' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+CMD ["/app/start.sh"] 

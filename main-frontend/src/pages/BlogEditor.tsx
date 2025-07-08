@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { BlogPost } from '../types';
 import { blogService } from '../services/blogService';
+import { authService } from '../services/authService';
 import { Box } from '@mui/material';
 
 const EditorContainer = styled.div`
@@ -236,6 +237,7 @@ const BlogEditor: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1); // 1: 基本信息, 2: 正文内容
+  const [user, setUser] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -265,14 +267,24 @@ const BlogEditor: React.FC = () => {
   }, [id]);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    if (!isLoggedIn) {
-      navigate('/dna-repair/admin/login');
-      return;
-    }
-    if (id && id !== 'new') {
-      fetchPost();
-    }
+    const checkAuth = async () => {
+      try {
+        const currentUser = await authService.verifyToken();
+        if (!currentUser) {
+          navigate('/dna-repair/admin/login');
+          return;
+        }
+        setUser(currentUser);
+        if (id && id !== 'new') {
+          fetchPost();
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        navigate('/dna-repair/admin/login');
+      }
+    };
+
+    checkAuth();
   }, [id, navigate, fetchPost]);
 
   const handleInputChange = (field: string, value: string) => {
@@ -313,7 +325,7 @@ const BlogEditor: React.FC = () => {
         content: formData.content,
         category: formData.category,
         tags: formData.tags,
-        author: localStorage.getItem('adminUsername') || 'Admin',
+        author: user?.username || 'Admin',
         publishDate: new Date().toISOString()
       };
 

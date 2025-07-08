@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { BlogPostMeta } from '../types';
 import { blogService } from '../services/blogService';
+import { authService } from '../services/authService';
 
 const DashboardContainer = styled.div`
   max-width: 1200px;
@@ -168,17 +169,27 @@ const EmptyState = styled.div`
 const AdminDashboard: React.FC = () => {
   const [posts, setPosts] = useState<BlogPostMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 检查登录状态
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    if (!isLoggedIn) {
-      navigate('/dna-repair/admin/login');
-      return;
-    }
+    // Check authentication
+    const checkAuth = async () => {
+      try {
+        const currentUser = await authService.verifyToken();
+        if (!currentUser) {
+          navigate('/dna-repair/admin/login');
+          return;
+        }
+        setUser(currentUser);
+        fetchPosts();
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        navigate('/dna-repair/admin/login');
+      }
+    };
 
-    fetchPosts();
+    checkAuth();
   }, [navigate]);
 
   const fetchPosts = async () => {
@@ -192,10 +203,16 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminUsername');
-    navigate('/dna-repair/admin/login');
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate('/dna-repair/admin/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Force logout by clearing local storage
+      authService.clearAuth();
+      navigate('/dna-repair/admin/login');
+    }
   };
 
   const handleDeletePost = async (id: string) => {
@@ -211,7 +228,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const getUsername = () => {
-    return localStorage.getItem('adminUsername') || 'Admin';
+    return user?.username || 'Admin';
   };
 
   if (loading) {

@@ -5,6 +5,7 @@ import { proteinRoutes } from './routes/protein.routes';
 import proteinPositionRoutes from './routes/proteinPosition.routes';
 import blogRoutes from './routes/blog.routes';
 import proteinModificationRoutes from './routes/proteinModification.routes';
+import authRoutes from './routes/auth.routes';
 import { connectDB } from './config/database';
 
 dotenv.config();
@@ -22,6 +23,15 @@ app.get('/', (req, res) => {
     message: 'Welcome to DNA Repair Knowledge Base API',
     version: '1.0.0',
     endpoints: {
+      auth: {
+        base: '/api/auth',
+        methods: {
+          POST_LOGIN: '/api/auth/login - Admin login',
+          GET_VERIFY: '/api/auth/verify - Verify token',
+          POST_LOGOUT: '/api/auth/logout - Logout',
+          POST_SETUP: '/api/auth/setup - Create initial admin (first-time only)'
+        }
+      },
       proteins: {
         base: '/api/proteins',
         methods: {
@@ -58,6 +68,7 @@ app.get('/', (req, res) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/proteins', proteinRoutes);
 app.use('/api/protein-positions', proteinPositionRoutes);
 app.use('/api/blogs', blogRoutes);
