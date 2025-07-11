@@ -4,8 +4,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Set MongoDB URI for Docker environment
-process.env.MONGODB_URI = 'mongodb://admin:password@mongodb:27017/dna-repair?authSource=admin';
+// Use environment variables with fallbacks for development
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dna-repair';
+
+// Set environment variable if not already set
+if (!process.env.MONGODB_URI) {
+  process.env.MONGODB_URI = MONGODB_URI;
+}
 
 const hrProteinPositions = [
   {

@@ -1,9 +1,21 @@
 import { connectDB } from '../config/database';
 import { Admin } from '../models/Admin';
+import dotenv from 'dotenv';
 
-// Set MongoDB URI for Docker environment
-process.env.MONGODB_URI = 'mongodb://admin:password@mongodb:27017/dna-repair?authSource=admin';
-process.env.JWT_SECRET = 'your-super-secret-jwt-key-change-this-in-production';
+// Load environment variables
+dotenv.config();
+
+// Use environment variables with fallbacks for development
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dna-repair';
+const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
+
+// Set environment variables if not already set
+if (!process.env.MONGODB_URI) {
+  process.env.MONGODB_URI = MONGODB_URI;
+}
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = JWT_SECRET;
+}
 
 const setupAdmin = async () => {
   try {
@@ -16,16 +28,10 @@ const setupAdmin = async () => {
       process.exit(0);
     }
 
-    // Get admin credentials from environment variables
+    // Get admin credentials from environment variables with defaults
     const username = process.env.ADMIN_USERNAME || 'admin';
-    const password = process.env.ADMIN_PASSWORD;
+    const password = process.env.ADMIN_PASSWORD || 'admin123'; // 默认密码
     const email = process.env.ADMIN_EMAIL || 'admin@yiranest.cloud';
-
-    if (!password) {
-      console.error('ADMIN_PASSWORD environment variable is required');
-      console.error('Please set ADMIN_PASSWORD before running this script');
-      process.exit(1);
-    }
 
     // Create initial admin
     const admin = new Admin({
@@ -37,8 +43,11 @@ const setupAdmin = async () => {
 
     await admin.save();
     console.log('Admin created successfully:', admin.username);
-    console.log('You can now login with the credentials you provided');
-    console.log('IMPORTANT: Change the password after first login!');
+    console.log('Default credentials:');
+    console.log('Username:', username);
+    console.log('Password:', password);
+    console.log('IMPORTANT: Please change the password after first login!');
+    console.log('You can use the "Change Password" feature in the admin dashboard.');
     
     process.exit(0);
   } catch (error) {

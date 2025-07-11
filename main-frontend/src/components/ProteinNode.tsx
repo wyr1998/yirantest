@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Protein, ProteinModification } from '../types';
 import { proteinModificationService } from '../services/proteinModificationService';
 import { Menu, MenuItem } from '@mui/material';
+import { authService } from '../services/authService';
 import { ProteinModificationForm } from './ProteinModificationForm';
 
 const NodeContainer = styled.div`
@@ -95,6 +96,16 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
   const [modifications, setModifications] = useState<ProteinModification[]>([]);
   const [showModificationForm, setShowModificationForm] = useState(false);
   const [selectedModification, setSelectedModification] = useState<ProteinModification | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const user = await authService.verifyToken();
+      setIsAdmin(!!user);
+    } catch (error) {
+      setIsAdmin(false);
+    }
+  }, []);
 
   const loadModifications = useCallback(async () => {
     try {
@@ -115,11 +126,15 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
   }, []);
 
   useEffect(() => {
+    checkAuth();
     loadModifications();
-  }, [loadModifications]);
+  }, [checkAuth, loadModifications]);
 
   const handleContextMenu = (event: React.MouseEvent) => {
     event.preventDefault();
+    // Only show context menu for admin users
+    if (!isAdmin) return;
+    
     setSelectedModification(null);
     setContextMenu(
       contextMenu === null
@@ -143,6 +158,9 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
 
   const handleModificationClick = (event: React.MouseEvent, mod: ProteinModification) => {
     event.stopPropagation();
+    // Only allow modification management for admin users
+    if (!isAdmin) return;
+    
     setSelectedModification(mod);
     setContextMenu({
       mouseX: event.clientX - 2,
@@ -268,37 +286,39 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
 
       <Handle type="source" position={Position.Bottom} />
 
-      <Menu
-        open={contextMenu !== null}
-        onClose={handleClose}
-        anchorReference="anchorPosition"
-        anchorPosition={
-          contextMenu !== null
-            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-            : undefined
-        }
-      >
-        {selectedModification ? (
-          <>
-            <MenuItem onClick={() => {
-              setShowModificationForm(true);
-              handleClose();
-            }}>
-              Edit Modification
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                handleDeleteModification(selectedModification);
-              }} 
-              style={{ color: '#d32f2f' }}
-            >
-              Delete Modification
-            </MenuItem>
-          </>
-        ) : (
-          <MenuItem onClick={handleAddModification}>Add Modification</MenuItem>
-        )}
-      </Menu>
+      {isAdmin && (
+        <Menu
+          open={contextMenu !== null}
+          onClose={handleClose}
+          anchorReference="anchorPosition"
+          anchorPosition={
+            contextMenu !== null
+              ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+              : undefined
+          }
+        >
+          {selectedModification ? (
+            <>
+              <MenuItem onClick={() => {
+                setShowModificationForm(true);
+                handleClose();
+              }}>
+                Edit Modification
+              </MenuItem>
+              <MenuItem 
+                onClick={() => {
+                  handleDeleteModification(selectedModification);
+                }} 
+                style={{ color: '#d32f2f' }}
+              >
+                Delete Modification
+              </MenuItem>
+            </>
+          ) : (
+            <MenuItem onClick={handleAddModification}>Add Modification</MenuItem>
+          )}
+        </Menu>
+      )}
 
       <ProteinModificationForm
         open={showModificationForm}

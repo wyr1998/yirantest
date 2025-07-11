@@ -13,6 +13,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import BlogEditor from './pages/BlogEditor';
 import { proteinApi } from './services/api';
+import { authService } from './services/authService';
 import { Protein } from './types';
 
 const router = {
@@ -49,22 +50,39 @@ function ProteinFormWrapper() {
   const { id } = useParams();
   const [initialData, setInitialData] = useState<Partial<Protein>>({});
   const [loading, setLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      setLoading(true);
-      proteinApi.getOne(id)
-        .then(data => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const user = await authService.verifyToken();
+      if (!user) {
+        // Redirect to admin login if not authenticated
+        navigate('/dna-repair/admin/login');
+        return;
+      }
+      setAuthChecked(true);
+      
+      // Load protein data if editing
+      if (id) {
+        setLoading(true);
+        try {
+          const data = await proteinApi.getOne(id);
           setInitialData(data);
-        })
-        .catch(error => {
+        } catch (error) {
           console.error('Failed to fetch protein:', error);
-        })
-        .finally(() => {
+        } finally {
           setLoading(false);
-        });
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      navigate('/dna-repair/admin/login');
     }
-  }, [id]);
+  };
 
   const handleClose = () => {
     setOpen(false);
@@ -83,6 +101,10 @@ function ProteinFormWrapper() {
       console.error('Failed to save protein:', error);
     }
   };
+
+  if (!authChecked) {
+    return <div>Checking authentication...</div>;
+  }
 
   if (loading) {
     return <div>Loading...</div>;

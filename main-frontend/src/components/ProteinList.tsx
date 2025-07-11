@@ -19,6 +19,7 @@ import {
 import { Link } from 'react-router-dom';
 import type { Protein } from '../types';
 import { proteinApi } from '../services/api';
+import { authService } from '../services/authService';
 
 const ProteinList: React.FC = () => {
   const [proteins, setProteins] = useState<Protein[]>([]);
@@ -26,10 +27,21 @@ const ProteinList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [proteinToDelete, setProteinToDelete] = useState<Protein | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    checkAuth();
     fetchProteins();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const user = await authService.verifyToken();
+      setIsAdmin(!!user);
+    } catch (error) {
+      setIsAdmin(false);
+    }
+  };
 
   const fetchProteins = async () => {
     try {
@@ -91,15 +103,17 @@ const ProteinList: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         DNA Repair Proteins
       </Typography>
-      <Button 
-        component={Link} 
-        to="/dna-repair/proteins/new" 
-        variant="contained" 
-        color="primary" 
-        sx={{ mb: 2 }}
-      >
-        Add New Protein
-      </Button>
+      {isAdmin && (
+        <Button 
+          component={Link} 
+          to="/dna-repair/proteins/new" 
+          variant="contained" 
+          color="primary" 
+          sx={{ mb: 2 }}
+        >
+          Add New Protein
+        </Button>
+      )}
       <Grid container spacing={3}>
             {proteins.map((protein) => (
           <Grid item xs={12} sm={6} md={4} key={protein._id}>
@@ -127,21 +141,25 @@ const ProteinList: React.FC = () => {
                   >
                     View
                   </Button>
-                  <Button 
-                    component={Link} 
-                    to={`/dna-repair/proteins/${protein._id}/edit`}
-                    size="small"
-                    color="primary"
-                  >
-                    Edit
-                  </Button>
-                  <Button 
-                    size="small"
-                    color="error"
-                    onClick={() => handleDeleteClick(protein)}
-                  >
-                    Delete
-                  </Button>
+                  {isAdmin && (
+                    <>
+                      <Button 
+                        component={Link} 
+                        to={`/dna-repair/proteins/${protein._id}/edit`}
+                        size="small"
+                        color="primary"
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteClick(protein)}
+                      >
+                        Delete
+                      </Button>
+                    </>
+                  )}
               </CardActions>
             </Card>
           </Grid>

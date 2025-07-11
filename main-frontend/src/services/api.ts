@@ -49,9 +49,7 @@ export const proteinApi = {
 
   // Get a single protein
   getOne: async (id: string): Promise<Protein> => {
-    console.log('API: Fetching protein with ID:', id);
     const response = await api.get(`/proteins/${id}`);
-    console.log('API: Received protein data:', response.data);
     return response.data;
   },
 

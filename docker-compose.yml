@@ -16,7 +16,7 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://admin:password@mongodb:27017/dna-repair?authSource=admin
+      - MONGODB_URI=${MONGODB_URI:-mongodb://admin:password@mongodb:27017/dna-repair?authSource=admin}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}

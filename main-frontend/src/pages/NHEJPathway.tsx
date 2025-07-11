@@ -144,17 +144,16 @@ const NHEJPathway: React.FC = () => {
     [nodes]
   );
 
-  const onNodeClick = (event: React.MouseEvent, node: Node) => {
-    console.log('Node clicked:', node);
-    console.log('Node data:', node.data);
-    setSelectedProtein(node.data as Protein);
-  };
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    // Handle node click - could open details modal or navigate to protein page
+    // For now, just prevent default behavior
+    event.preventDefault();
+  }, []);
 
-  const onNodeDoubleClick = (event: React.MouseEvent, node: Node) => {
-    console.log('Node double clicked:', node);
-    console.log('Node data:', node.data);
-    setSelectedProtein(node.data as Protein);
-  };
+  const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
+    // Handle node double click - could open edit modal
+    event.preventDefault();
+  }, []);
 
   if (loading) {
     return <div>Loading...</div>;
