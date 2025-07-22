@@ -173,14 +173,15 @@ function App() {
               </a>
             </span>
     
-            <span>
+            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
               <a 
-                href="https://beian.mps.gov.cn/" 
+                href="https://beian.mps.gov.cn/#/query/webSearch?code=21011202001086" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{ color: '#666', textDecoration: 'none' }}
+                style={{ color: '#666', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
               >
-                公安备案：辽公网安备XXXXXXXXXX号
+                <img src="/beian.png" alt="公安备案图标" style={{ width: '16px', height: '16px', marginRight: '5px' }} />
+                辽公网安备21011202001086号
               </a>
             </span>
           </div>
