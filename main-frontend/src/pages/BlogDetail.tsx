@@ -224,7 +224,7 @@ const BlogDetail: React.FC = () => {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -254,20 +254,38 @@ const BlogDetail: React.FC = () => {
       }
       
       try {
-        const postData = await blogService.getPostById(id);
+        let postData;
+        
+        // 如果是admin用户，使用admin专用API
+        if (isAdmin) {
+          postData = await blogService.getPostByIdForAdmin(id);
+        } else {
+          // 普通用户使用标准API
+          postData = await blogService.getPostById(id);
+        }
+        
         if (postData) {
           setPost(postData);
         } else {
           setError('Post not found');
         }
         setLoading(false);
-      } catch (err) {
+      } catch (err: any) {
+        console.error('Error fetching post:', err);
+        if (err.response?.status === 403) {
+          setError('Access denied. This content is admin-only.');
+        } else {
         setError('Failed to load post');
+        }
         setLoading(false);
       }
     };
+    
+    // 等待认证检查完成后再获取文章
+    if (isAdmin !== undefined) {
     fetchPost();
-  }, [id]);
+    }
+  }, [id, isAdmin]);
 
   if (loading) {
     return <LoadingSpinner>Loading post...</LoadingSpinner>;

@@ -19,6 +19,9 @@ router.get('/category/:category', blogController.getPostsByCategory);
 // Get admin-only posts (admin only)
 router.get('/admin-only', auth, requireAdmin, blogController.getAdminOnlyPosts);
 
+// Get a single blog post for admin editing (admin only)
+router.get('/admin/:id', auth, requireAdmin, blogController.getPostByIdForAdmin);
+
 // Create a new blog post (admin only)
 router.post('/', auth, requireAdmin, blogController.createPost);
 

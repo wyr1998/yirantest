@@ -57,6 +57,26 @@ export const blogController = {
     }
   },
 
+  // Get a single blog post by ID for admin editing (admin only)
+  getPostByIdForAdmin: async (req: AuthRequest, res: Response) => {
+    try {
+      // Check if user is admin
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const post = await Blog.findById(req.params.id);
+      if (!post) {
+        return res.status(404).json({ message: 'Blog post not found' });
+      }
+      
+      res.json(post);
+    } catch (error) {
+      console.error('Error fetching blog post for admin:', error);
+      res.status(500).json({ message: 'Failed to fetch blog post' });
+    }
+  },
+
   // Create a new blog post
   createPost: async (req: AuthRequest, res: Response) => {
     try {

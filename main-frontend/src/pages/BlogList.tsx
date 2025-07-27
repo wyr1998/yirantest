@@ -149,9 +149,9 @@ const BlogList: React.FC = () => {
           <MenuItem value="General">General</MenuItem>
         </Select>
         {!isAdmin && (
-          <Button component={Link} to="/dna-repair/blog/new" variant="contained" color="primary">
-            New Blog
-          </Button>
+        <Button component={Link} to="/dna-repair/blog/new" variant="contained" color="primary">
+          New Blog
+        </Button>
         )}
       </Box>
       

@@ -26,8 +26,18 @@ export const blogService = {
     try {
       const response = await api.get(`${API_BASE}/${id}`);
       const post = response.data;
-    // Normalize _id to id
-    return { ...post, id: post._id || post.id };
+      return { ...post, id: post._id || post.id };
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // 根据ID获取特定博客文章（admin编辑专用）
+  getPostByIdForAdmin: async (id: string): Promise<BlogPost | null> => {
+    try {
+      const response = await api.get(`${API_BASE}/admin/${id}`);
+      const post = response.data;
+      return { ...post, id: post._id || post.id };
     } catch (error) {
       return null;
     }

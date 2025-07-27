@@ -254,8 +254,14 @@ const BlogEditor: React.FC = () => {
       if (!id || id === 'new') {
         return; // Don't fetch data for new article
       }
-      const post = await blogService.getPostById(id);
+      
+      console.log('Fetching post with ID:', id);
+      console.log('Current token:', localStorage.getItem('authToken'));
+      
+      // Use admin-specific API for editing
+      const post = await blogService.getPostByIdForAdmin(id);
       if (post) {
+        console.log('Successfully fetched post:', post);
         setFormData({
           title: post.title,
           excerpt: post.excerpt,
@@ -267,6 +273,7 @@ const BlogEditor: React.FC = () => {
         });
       }
     } catch (error) {
+      console.error('Error fetching post:', error);
       setError('Failed to load post');
     }
   }, [id]);
@@ -276,14 +283,14 @@ const BlogEditor: React.FC = () => {
       try {
         const currentUser = await authService.verifyToken();
         if (!currentUser) {
-          navigate('/dna-repair/admin/login');
-          return;
-        }
+      navigate('/dna-repair/admin/login');
+      return;
+    }
         setUser(currentUser);
         // 只有在编辑现有文章时才获取数据
-        if (id && id !== 'new') {
-          fetchPost();
-        }
+    if (id && id !== 'new') {
+      fetchPost();
+    }
       } catch (error) {
         console.error('Auth check failed:', error);
         navigate('/dna-repair/admin/login');
