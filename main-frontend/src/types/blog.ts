@@ -8,6 +8,7 @@ export interface BlogPost {
   publishDate: string;
   tags: string[];
   category: 'DNA-Repair' | 'Research' | 'General';
+  isAdminOnly: boolean;
 }
 
 export interface BlogPostMeta {
@@ -19,4 +20,5 @@ export interface BlogPostMeta {
   publishDate: string;
   tags: string[];
   category: 'DNA-Repair' | 'Research' | 'General';
+  isAdminOnly: boolean;
 } 

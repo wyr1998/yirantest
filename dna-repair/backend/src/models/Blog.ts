@@ -8,6 +8,7 @@ export interface IBlog extends Document {
   publishDate: Date;
   tags: string[];
   category: string;
+  isAdminOnly: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +47,10 @@ const BlogSchema = new Schema<IBlog>(
       required: true,
       enum: ['DNA-Repair', 'Research', 'General'],
       default: 'General',
+    },
+    isAdminOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   {

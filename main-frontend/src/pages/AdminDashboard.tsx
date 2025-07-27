@@ -149,6 +149,19 @@ const PostTitle = styled.div`
   font-weight: 500;
   color: #333;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const AdminOnlyBadge = styled.span`
+  background: #ffebee;
+  color: #d32f2f;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid #ffcdd2;
 `;
 
 const PostMeta = styled.div`
@@ -210,7 +223,13 @@ const AdminDashboard: React.FC = () => {
 
   const fetchPosts = async () => {
     try {
-      const allPosts = await blogService.getAllPosts();
+      console.log('Fetching posts for admin dashboard...');
+      
+      // Get all posts for admin dashboard
+      const allPosts = await blogService.getAllPostsForAdmin();
+      
+      console.log('All posts for admin:', allPosts);
+      
       setPosts(allPosts);
       setLoading(false);
     } catch (error) {
@@ -232,13 +251,13 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleDeletePost = async (id: string) => {
-    if (window.confirm('确定要删除这篇文章吗？')) {
+    if (window.confirm('Are you sure you want to delete this post?')) {
       try {
         await blogService.deletePost(id);
-        fetchPosts(); // 删除后刷新列表
+        fetchPosts(); // Refresh list after deletion
       } catch (error) {
         console.error('Failed to delete post:', error);
-        alert('删除失败，请重试！');
+        alert('Delete failed, please try again!');
       }
     }
   };
@@ -254,64 +273,75 @@ const AdminDashboard: React.FC = () => {
   return (
     <DashboardContainer>
       <Header>
-        <Title>管理后台</Title>
+        <Title>Admin Dashboard</Title>
         <HeaderActions>
-          <WelcomeText>欢迎，{getUsername()}！</WelcomeText>
+          <WelcomeText>Welcome, {getUsername()}!</WelcomeText>
           <PasswordChangeButton onClick={() => setShowPasswordModal(true)}>
-            修改密码
+            Change Password
           </PasswordChangeButton>
-          <NewPostButton to="/dna-repair/admin/new-post">写新文章</NewPostButton>
-          <LogoutButton onClick={handleLogout}>退出登录</LogoutButton>
+          <NewPostButton to="/dna-repair/admin/new-post">Write New Article</NewPostButton>
+          <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
         </HeaderActions>
       </Header>
 
       <StatsGrid>
         <StatCard>
           <StatNumber>{posts.length}</StatNumber>
-          <StatLabel>总文章数</StatLabel>
+          <StatLabel>Total Articles</StatLabel>
         </StatCard>
         <StatCard>
           <StatNumber>
             {posts.filter(post => post.category === 'DNA-Repair').length}
           </StatNumber>
-          <StatLabel>DNA修复类</StatLabel>
+          <StatLabel>DNA Repair Category</StatLabel>
         </StatCard>
         <StatCard>
           <StatNumber>
             {posts.filter(post => post.category === 'Research').length}
           </StatNumber>
-          <StatLabel>研究类</StatLabel>
+          <StatLabel>Research Category</StatLabel>
         </StatCard>
         <StatCard>
           <StatNumber>
             {posts.filter(post => post.category === 'General').length}
           </StatNumber>
-          <StatLabel>通用类</StatLabel>
+          <StatLabel>General Category</StatLabel>
+        </StatCard>
+        <StatCard>
+          <StatNumber>
+            {posts.filter(post => post.isAdminOnly).length}
+          </StatNumber>
+          <StatLabel>Admin-Only Articles</StatLabel>
         </StatCard>
       </StatsGrid>
 
       <PostsSection>
-        <SectionHeader>文章管理</SectionHeader>
+        <SectionHeader>Article Management</SectionHeader>
         <PostsList>
           {posts.length === 0 ? (
             <EmptyState>
-              还没有文章，点击"写新文章"开始创作吧！
+              No articles yet. Click "Write New Article" to start creating!
             </EmptyState>
           ) : (
             posts.map(post => (
               <PostItem key={post.id}>
                 <PostInfo>
-                  <PostTitle>{post.title}</PostTitle>
+                  <PostTitle>
+                    {post.title}
+                    {post.isAdminOnly && (
+                      <AdminOnlyBadge>Admin Only</AdminOnlyBadge>
+                    )}
+                  </PostTitle>
                   <PostMeta>
                     {post.author} • {new Date(post.publishDate).toLocaleDateString()} • {post.category}
                   </PostMeta>
                 </PostInfo>
                 <PostActions>
                   <ActionButton onClick={() => navigate(`/dna-repair/admin/edit/${post.id}`)}>
-                    编辑
+                    Edit
                   </ActionButton>
                   <ActionButton $variant="delete" onClick={() => handleDeletePost(post.id)}>
-                    删除
+                    Delete
                   </ActionButton>
                 </PostActions>
               </PostItem>

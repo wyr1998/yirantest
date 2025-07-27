@@ -14,17 +14,36 @@ import {
   Chip,
   Stack,
   CircularProgress,
-  Alert
+  Alert,
+  Divider,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import { BlogPostMeta } from '../types';
 import { blogService } from '../services/blogService';
+import { authService } from '../services/authService';
 
 const BlogList: React.FC = () => {
   const [posts, setPosts] = useState<BlogPostMeta[]>([]);
+  const [adminOnlyPosts, setAdminOnlyPosts] = useState<BlogPostMeta[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPostMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminOnly, setShowAdminOnly] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await authService.verifyToken();
+        setIsAdmin(user?.role === 'admin' || user?.role === 'super_admin');
+      } catch (error) {
+        setIsAdmin(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -33,16 +52,27 @@ const BlogList: React.FC = () => {
         const validPosts = allPosts.filter(post => !!post.id);
         setPosts(validPosts);
         setFilteredPosts(validPosts);
+        
+        // 如果是admin，获取admin-only的posts
+        if (isAdmin) {
+          try {
+            const adminPosts = await blogService.getAdminOnlyPosts();
+            setAdminOnlyPosts(adminPosts.filter(post => !!post.id));
+          } catch (error) {
+            console.error('Failed to fetch admin-only posts:', error);
+          }
+        }
+        
         setLoading(false);
       } catch (error) {
         setLoading(false);
       }
     };
     fetchPosts();
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
-    let filtered = posts;
+    let filtered = showAdminOnly ? adminOnlyPosts : posts;
     if (searchQuery) {
       filtered = filtered.filter(post =>
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -53,7 +83,7 @@ const BlogList: React.FC = () => {
       filtered = filtered.filter(post => post.category === selectedCategory);
     }
     setFilteredPosts(filtered);
-  }, [searchQuery, selectedCategory, posts]);
+  }, [searchQuery, selectedCategory, posts, adminOnlyPosts, showAdminOnly]);
 
   if (loading) {
     return (
@@ -73,6 +103,31 @@ const BlogList: React.FC = () => {
           Explore the latest research, news, and insights on DNA repair pathways.
         </Typography>
       </Box>
+      
+      {/* Admin Controls */}
+      {isAdmin && (
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid #e0e0e0' }}>
+          <Typography variant="h6" color="error" gutterBottom>
+            Admin Controls
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showAdminOnly}
+                  onChange={(e) => setShowAdminOnly(e.target.checked)}
+                  color="error"
+                />
+              }
+              label="Show Admin-Only Posts"
+            />
+            <Button component={Link} to="/dna-repair/blog/new" variant="contained" color="primary" size="small">
+              Create New Post
+            </Button>
+          </Box>
+        </Box>
+      )}
+      
       <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
         <TextField
           label="Search by title or author"
@@ -93,13 +148,16 @@ const BlogList: React.FC = () => {
           <MenuItem value="Research">Research</MenuItem>
           <MenuItem value="General">General</MenuItem>
         </Select>
-        <Button component={Link} to="/dna-repair/blog/new" variant="contained" color="primary">
-          New Blog
-        </Button>
+        {!isAdmin && (
+          <Button component={Link} to="/dna-repair/blog/new" variant="contained" color="primary">
+            New Blog
+          </Button>
+        )}
       </Box>
+      
       {filteredPosts.length === 0 ? (
         <Alert severity="info" sx={{ mt: 4 }}>
-          No blog posts found.
+          {showAdminOnly ? 'No admin-only blog posts found.' : 'No blog posts found.'}
         </Alert>
       ) : (
         <Grid container spacing={3}>
@@ -109,6 +167,9 @@ const BlogList: React.FC = () => {
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Stack direction="row" spacing={1} mb={1}>
                     <Chip label={post.category} color="primary" size="small" />
+                    {post.isAdminOnly && (
+                      <Chip label="Admin Only" color="error" size="small" />
+                    )}
                     {post.tags && post.tags.map(tag => (
                       <Chip key={tag} label={tag} size="small" variant="outlined" />
                     ))}
@@ -127,6 +188,11 @@ const BlogList: React.FC = () => {
                   <Button component={Link} to={`/dna-repair/blog/${post.id}`} size="small">
                     Read More
                   </Button>
+                  {isAdmin && (
+                    <Button component={Link} to={`/dna-repair/blog/edit/${post.id}`} size="small" color="secondary">
+                      Edit
+                    </Button>
+                  )}
                 </CardActions>
               </Card>
             </Grid>

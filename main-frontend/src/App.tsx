@@ -133,6 +133,8 @@ function DnaRepairApp() {
           <Route path="proteins/:id/edit" element={<ProteinFormWrapper />} />
           <Route path="proteins/:id" element={<ProteinDetail />} />
           <Route path="blog" element={<BlogList />} />
+          <Route path="blog/new" element={<BlogEditor />} />
+          <Route path="blog/edit/:id" element={<BlogEditor />} />
           <Route path="blog/:id" element={<BlogDetail />} />
           <Route path="admin/login" element={<AdminLogin />} />
           <Route path="admin" element={<AdminDashboard />} />

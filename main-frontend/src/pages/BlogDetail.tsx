@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { BlogPost } from '../types';
 import { blogService } from '../services/blogService';
+import { authService } from '../services/authService';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { Box } from '@mui/material';
 
@@ -208,11 +209,34 @@ const ErrorMessage = styled.div`
   font-size: 1.1em;
 `;
 
+const AdminOnlyBadge = styled.span`
+  background: #ffebee;
+  color: #d32f2f;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.95em;
+  font-weight: 500;
+  border: 1px solid #ffcdd2;
+`;
+
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await authService.verifyToken();
+        setIsAdmin(user?.role === 'admin' || user?.role === 'super_admin');
+      } catch (error) {
+        setIsAdmin(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -221,6 +245,14 @@ const BlogDetail: React.FC = () => {
         setLoading(false);
         return;
       }
+      
+      // 防止尝试获取ID为'new'的文章
+      if (id === 'new') {
+        setError('Invalid post ID');
+        setLoading(false);
+        return;
+      }
+      
       try {
         const postData = await blogService.getPostById(id);
         if (postData) {
@@ -269,6 +301,9 @@ const BlogDetail: React.FC = () => {
               <CategoryBadge $category={post.category}>
                 {post.category}
               </CategoryBadge>
+              {post.isAdminOnly && (
+                <AdminOnlyBadge>Admin Only</AdminOnlyBadge>
+              )}
             </MetaInfo>
             <Tags>
               {post.tags.map(tag => (

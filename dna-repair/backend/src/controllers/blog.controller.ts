@@ -1,11 +1,19 @@
 import { Request, Response } from 'express';
 import { Blog, IBlog } from '../models/Blog';
+import { AuthRequest } from '../middleware/auth';
 
 export const blogController = {
-  // Get all blog posts
-  getAllPosts: async (req: Request, res: Response) => {
+  // Get all blog posts (filtered by user role)
+  getAllPosts: async (req: AuthRequest, res: Response) => {
     try {
-      const posts = await Blog.find().sort({ publishDate: -1 });
+      let query: any = {};
+      
+      // If user is not admin, filter out admin-only posts
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+        query.isAdminOnly = { $ne: true };
+      }
+      
+      const posts = await Blog.find(query).sort({ publishDate: -1 });
       res.json(posts);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
@@ -13,13 +21,35 @@ export const blogController = {
     }
   },
 
-  // Get a single blog post by ID
-  getPostById: async (req: Request, res: Response) => {
+  // Get all blog posts for admin dashboard (including admin-only posts)
+  getAllPostsForAdmin: async (req: AuthRequest, res: Response) => {
+    try {
+      // Check if user is admin
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const posts = await Blog.find().sort({ publishDate: -1 });
+      res.json(posts);
+    } catch (error) {
+      console.error('Error fetching all posts for admin:', error);
+      res.status(500).json({ message: 'Failed to fetch all posts' });
+    }
+  },
+
+  // Get a single blog post by ID (with permission check)
+  getPostById: async (req: AuthRequest, res: Response) => {
     try {
       const post = await Blog.findById(req.params.id);
       if (!post) {
         return res.status(404).json({ message: 'Blog post not found' });
       }
+      
+      // Check if user has permission to view admin-only post
+      if (post.isAdminOnly && (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin'))) {
+        return res.status(403).json({ message: 'Access denied. Admin only content.' });
+      }
+      
       res.json(post);
     } catch (error) {
       console.error('Error fetching blog post:', error);
@@ -28,9 +58,9 @@ export const blogController = {
   },
 
   // Create a new blog post
-  createPost: async (req: Request, res: Response) => {
+  createPost: async (req: AuthRequest, res: Response) => {
     try {
-      const { title, content, excerpt, author, tags, category } = req.body;
+      const { title, content, excerpt, author, tags, category, isAdminOnly } = req.body;
       
       const newPost = new Blog({
         title,
@@ -39,6 +69,7 @@ export const blogController = {
         author,
         tags: tags || [],
         category: category || 'General',
+        isAdminOnly: isAdminOnly || false,
         publishDate: new Date(),
       });
 
@@ -51,9 +82,9 @@ export const blogController = {
   },
 
   // Update a blog post
-  updatePost: async (req: Request, res: Response) => {
+  updatePost: async (req: AuthRequest, res: Response) => {
     try {
-      const { title, content, excerpt, author, tags, category } = req.body;
+      const { title, content, excerpt, author, tags, category, isAdminOnly } = req.body;
       
       const updatedPost = await Blog.findByIdAndUpdate(
         req.params.id,
@@ -64,6 +95,7 @@ export const blogController = {
           author,
           tags: tags || [],
           category: category || 'General',
+          isAdminOnly: isAdminOnly || false,
         },
         { new: true, runValidators: true }
       );
@@ -95,8 +127,8 @@ export const blogController = {
     }
   },
 
-  // Search blog posts
-  searchPosts: async (req: Request, res: Response) => {
+  // Search blog posts (with permission filtering)
+  searchPosts: async (req: AuthRequest, res: Response) => {
     try {
       const { query } = req.query;
       
@@ -104,13 +136,20 @@ export const blogController = {
         return res.status(400).json({ message: 'Search query is required' });
       }
 
-      const posts = await Blog.find({
+      let searchQuery: any = {
         $or: [
           { title: { $regex: query, $options: 'i' } },
           { content: { $regex: query, $options: 'i' } },
           { tags: { $in: [new RegExp(query, 'i')] } }
         ]
-      }).sort({ publishDate: -1 });
+      };
+      
+      // If user is not admin, filter out admin-only posts
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+        searchQuery.isAdminOnly = { $ne: true };
+      }
+
+      const posts = await Blog.find(searchQuery).sort({ publishDate: -1 });
 
       res.json(posts);
     } catch (error) {
@@ -119,15 +158,38 @@ export const blogController = {
     }
   },
 
-  // Get posts by category
-  getPostsByCategory: async (req: Request, res: Response) => {
+  // Get posts by category (with permission filtering)
+  getPostsByCategory: async (req: AuthRequest, res: Response) => {
     try {
       const { category } = req.params;
-      const posts = await Blog.find({ category }).sort({ publishDate: -1 });
+      let query: any = { category };
+      
+      // If user is not admin, filter out admin-only posts
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+        query.isAdminOnly = { $ne: true };
+      }
+      
+      const posts = await Blog.find(query).sort({ publishDate: -1 });
       res.json(posts);
     } catch (error) {
       console.error('Error fetching posts by category:', error);
       res.status(500).json({ message: 'Failed to fetch posts by category' });
+    }
+  },
+
+  // Get admin-only posts (admin only)
+  getAdminOnlyPosts: async (req: AuthRequest, res: Response) => {
+    try {
+      // Check if user is admin
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const posts = await Blog.find({ isAdminOnly: true }).sort({ publishDate: -1 });
+      res.json(posts);
+    } catch (error) {
+      console.error('Error fetching admin-only posts:', error);
+      res.status(500).json({ message: 'Failed to fetch admin-only posts' });
     }
   }
 }; 

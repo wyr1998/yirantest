@@ -245,12 +245,16 @@ const BlogEditor: React.FC = () => {
     content: '',
     category: 'DNA-Repair' as 'DNA-Repair' | 'Research' | 'General',
     tags: [] as string[],
-    newTag: ''
+    newTag: '',
+    isAdminOnly: false
   });
 
   const fetchPost = useCallback(async () => {
     try {
-      const post = await blogService.getPostById(id!);
+      if (!id || id === 'new') {
+        return; // Don't fetch data for new article
+      }
+      const post = await blogService.getPostById(id);
       if (post) {
         setFormData({
           title: post.title,
@@ -258,7 +262,8 @@ const BlogEditor: React.FC = () => {
           content: post.content,
           category: post.category,
           tags: post.tags,
-          newTag: ''
+          newTag: '',
+          isAdminOnly: post.isAdminOnly || false
         });
       }
     } catch (error) {
@@ -271,13 +276,14 @@ const BlogEditor: React.FC = () => {
       try {
         const currentUser = await authService.verifyToken();
         if (!currentUser) {
-      navigate('/dna-repair/admin/login');
-      return;
-    }
+          navigate('/dna-repair/admin/login');
+          return;
+        }
         setUser(currentUser);
-    if (id && id !== 'new') {
-      fetchPost();
-    }
+        // 只有在编辑现有文章时才获取数据
+        if (id && id !== 'new') {
+          fetchPost();
+        }
       } catch (error) {
         console.error('Auth check failed:', error);
         navigate('/dna-repair/admin/login');
@@ -310,7 +316,7 @@ const BlogEditor: React.FC = () => {
 
   const handleSave = async () => {
     if (!formData.title.trim() || !formData.content.trim()) {
-      setError('标题和内容不能为空');
+      setError('Title and content cannot be empty');
       return;
     }
 
@@ -326,7 +332,8 @@ const BlogEditor: React.FC = () => {
         category: formData.category,
         tags: formData.tags,
         author: user?.username || 'Admin',
-        publishDate: new Date().toISOString()
+        publishDate: new Date().toISOString(),
+        isAdminOnly: formData.isAdminOnly
       };
 
       if (!id || id === 'new') {
@@ -337,8 +344,8 @@ const BlogEditor: React.FC = () => {
         navigate('/dna-repair/admin');
       }
     } catch (error) {
-      console.error('保存失败详细信息:', error);
-      setError('保存失败');
+      console.error('Save failed details:', error);
+      setError('Save failed');
     } finally {
       setLoading(false);
     }
@@ -348,12 +355,12 @@ const BlogEditor: React.FC = () => {
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 3 } }}>
     <EditorContainer>
       <Header>
-        <Title>{id === 'new' ? '写新文章' : '编辑文章'}</Title>
+        <Title>{id === 'new' ? 'Write New Article' : 'Edit Article'}</Title>
         <HeaderActions>
-          <BackButton to="/dna-repair/admin">← 返回管理后台</BackButton>
+          <BackButton to="/dna-repair/admin">← Back to Admin</BackButton>
           {step === 2 && (
             <SaveButton onClick={handleSave} disabled={loading}>
-              {loading ? '保存中...' : '保存文章'}
+              {loading ? 'Saving...' : 'Save Article'}
             </SaveButton>
           )}
         </HeaderActions>
@@ -364,26 +371,26 @@ const BlogEditor: React.FC = () => {
       {step === 1 && (
         <FormContainer>
           <FormSection>
-            <SectionTitle>文章信息</SectionTitle>
+            <SectionTitle>Article Information</SectionTitle>
             <FormGroup>
-              <Label>标题 *</Label>
+              <Label>Title *</Label>
               <Input
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="输入文章标题"
+                placeholder="Enter article title"
               />
             </FormGroup>
             <FormGroup>
-              <Label>摘要</Label>
+              <Label>Excerpt</Label>
               <Textarea
                 value={formData.excerpt}
                 onChange={(e) => handleInputChange('excerpt', e.target.value)}
-                placeholder="输入文章摘要"
+                placeholder="Enter article excerpt"
               />
             </FormGroup>
             <FormGroup>
-              <Label>分类</Label>
+              <Label>Category</Label>
               <Select
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
@@ -394,16 +401,16 @@ const BlogEditor: React.FC = () => {
               </Select>
             </FormGroup>
             <FormGroup>
-              <Label>标签</Label>
+              <Label>Tags</Label>
               <TagInput>
                 <TagInputField
                   type="text"
                   value={formData.newTag}
                   onChange={e => handleInputChange('newTag', e.target.value)}
-                  placeholder="输入新标签"
+                  placeholder="Enter new tag"
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                 />
-                <AddTagButton type="button" onClick={handleAddTag}>添加</AddTagButton>
+                <AddTagButton type="button" onClick={handleAddTag}>Add</AddTagButton>
               </TagInput>
               <TagsContainer>
                 {formData.tags.map(tag => (
@@ -414,23 +421,33 @@ const BlogEditor: React.FC = () => {
                 ))}
               </TagsContainer>
             </FormGroup>
-            <SaveButton type="button" onClick={() => setStep(2)} style={{marginTop: 20}}>下一步：编辑正文内容 →</SaveButton>
+            <FormGroup>
+              <Label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.isAdminOnly}
+                  onChange={(e) => handleInputChange('isAdminOnly', e.target.checked.toString())}
+                />
+                Admin Only
+              </Label>
+            </FormGroup>
+            <SaveButton type="button" onClick={() => setStep(2)} style={{marginTop: 20}}>Next: Edit Content →</SaveButton>
           </FormSection>
         </FormContainer>
       )}
 
       {step === 2 && (
         <ContentEditorContainer>
-          <SectionTitle>正文内容 *</SectionTitle>
+          <SectionTitle>Content *</SectionTitle>
           <NativeTextarea
             value={formData.content}
             onChange={e => handleInputChange('content', e.target.value)}
-            placeholder="在这里输入正文内容，支持Markdown语法"
+            placeholder="Enter content here, supports Markdown syntax"
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
-            <SaveButton type="button" onClick={() => setStep(1)} style={{ background: '#ccc', color: '#333' }}>← 上一步</SaveButton>
+            <SaveButton type="button" onClick={() => setStep(1)} style={{ background: '#ccc', color: '#333' }}>← Previous</SaveButton>
             <SaveButton onClick={handleSave} disabled={loading}>
-              {loading ? '保存中...' : '保存文章'}
+              {loading ? 'Saving...' : 'Save Article'}
             </SaveButton>
           </div>
         </ContentEditorContainer>

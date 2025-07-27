@@ -16,7 +16,8 @@ export const blogService = {
       author: post.author,
       publishDate: post.publishDate,
       tags: post.tags,
-      category: post.category
+      category: post.category,
+      isAdminOnly: post.isAdminOnly || false
     }));
   },
 
@@ -43,7 +44,8 @@ export const blogService = {
       author: post.author,
       publishDate: post.publishDate,
       tags: post.tags,
-      category: post.category
+      category: post.category,
+      isAdminOnly: post.isAdminOnly || false
     }));
   },
 
@@ -58,7 +60,8 @@ export const blogService = {
       author: post.author,
       publishDate: post.publishDate,
       tags: post.tags,
-      category: post.category
+      category: post.category,
+      isAdminOnly: post.isAdminOnly || false
     }));
   },
 
@@ -86,5 +89,37 @@ export const blogService = {
     const response = await api.get(API_BASE);
     const posts: BlogPost[] = response.data;
     return posts.map(post => ({ ...post, id: post._id || post.id }));
+  },
+
+  // 获取仅管理员可见的博客文章
+  getAdminOnlyPosts: async (): Promise<BlogPostMeta[]> => {
+    const response = await api.get(`${API_BASE}/admin-only`);
+    const posts: BlogPost[] = response.data;
+    return posts.map(post => ({
+      id: post._id || post.id,
+      title: post.title,
+      excerpt: post.excerpt,
+      author: post.author,
+      publishDate: post.publishDate,
+      tags: post.tags,
+      category: post.category,
+      isAdminOnly: post.isAdminOnly || false
+    }));
+  },
+
+  // 获取所有博客文章（admin dashboard专用）
+  getAllPostsForAdmin: async (): Promise<BlogPostMeta[]> => {
+    const response = await api.get(`${API_BASE}/admin-all`);
+    const posts: BlogPost[] = response.data;
+    return posts.map(post => ({
+      id: post._id || post.id,
+      title: post.title,
+      excerpt: post.excerpt,
+      author: post.author,
+      publishDate: post.publishDate,
+      tags: post.tags,
+      category: post.category,
+      isAdminOnly: post.isAdminOnly || false
+    }));
   }
 }; 

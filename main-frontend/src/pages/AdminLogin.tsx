@@ -106,12 +106,12 @@ const AdminLogin: React.FC = () => {
 
     try {
       await authService.login({ username, password });
-      setSuccess('登录成功！正在跳转...');
+      setSuccess('Login successful! Redirecting...');
       setTimeout(() => {
         navigate('/dna-repair/admin');
       }, 1000);
     } catch (error: any) {
-      setError(error.message || '登录失败，请重试');
+      setError(error.message || 'Login failed, please try again');
     } finally {
       setLoading(false);
     }
@@ -120,10 +120,10 @@ const AdminLogin: React.FC = () => {
   return (
     <LoginContainer>
       <LoginCard>
-        <Title>管理员登录</Title>
+        <Title>Admin Login</Title>
         <Form onSubmit={handleSubmit}>
           <InputGroup>
-            <Label>用户名</Label>
+            <Label>Username</Label>
             <Input
               type="text"
               value={username}
@@ -133,7 +133,7 @@ const AdminLogin: React.FC = () => {
             />
           </InputGroup>
           <InputGroup>
-            <Label>密码</Label>
+            <Label>Password</Label>
             <Input
               type="password"
               value={password}
@@ -145,7 +145,7 @@ const AdminLogin: React.FC = () => {
           {error && <ErrorMessage>{error}</ErrorMessage>}
           {success && <SuccessMessage>{success}</SuccessMessage>}
           <LoginButton type="submit" disabled={loading}>
-            {loading ? '登录中...' : '登录'}
+            {loading ? 'Logging in...' : 'Login'}
           </LoginButton>
         </Form>
       </LoginCard>
