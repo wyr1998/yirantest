@@ -124,24 +124,33 @@ const HRPathway: React.FC = () => {
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      setNodes((nds) => applyNodeChanges(changes, nds));
-      
-      // Auto-save positions when nodes are moved
-      const positionChanges = changes.filter(change => change.type === 'position');
-      if (positionChanges.length > 0) {
-        const newPositions: ProteinPositions = {};
-        nodes.forEach(node => {
-          newPositions[node.id] = node.position;
-        });
+      setNodes((nds) => {
+        const updatedNodes = applyNodeChanges(changes, nds);
         
-        // Debounce the save operation
-        setTimeout(() => {
-          proteinPositionService.saveProteinPositions('HR', newPositions)
-            .catch(error => console.error('Failed to save positions:', error));
-        }, 1000);
-      }
+        // Auto-save positions when nodes are moved
+        const positionChanges = changes.filter(change => change.type === 'position');
+        if (positionChanges.length > 0) {
+          const newPositions: ProteinPositions = {};
+          updatedNodes.forEach(node => {
+            newPositions[node.id] = node.position;
+          });
+          
+          // Debounce the save operation
+          setTimeout(() => {
+            proteinPositionService.saveProteinPositions('HR', newPositions)
+              .catch(error => {
+                console.error('Failed to save positions:', error);
+                if (error.message?.includes('Authentication required')) {
+                  console.warn('Please log in as admin to save protein positions');
+                }
+              });
+          }, 1000);
+        }
+        
+        return updatedNodes;
+      });
     },
-    [nodes]
+    []
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
