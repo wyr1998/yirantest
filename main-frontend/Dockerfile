@@ -12,6 +12,9 @@ RUN npm install
 # Copy source code from main-frontend directory
 COPY main-frontend/ .
 
+# Set environment variable to disable source maps
+ENV GENERATE_SOURCEMAP=false
+
 # Build the app
 RUN npm run build
 
