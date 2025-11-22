@@ -154,10 +154,12 @@ const HRPathway: React.FC = () => {
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    // Handle node click - could open details modal or navigate to protein page
-    // For now, just prevent default behavior
-    event.preventDefault();
-  }, []);
+    // Set selected protein to show details in the panel
+    const clickedProtein = proteins.find(p => p._id === node.id);
+    if (clickedProtein) {
+      setSelectedProtein(clickedProtein);
+    }
+  }, [proteins]);
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
     // Handle node double click - could open edit modal

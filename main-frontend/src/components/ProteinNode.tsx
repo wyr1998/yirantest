@@ -68,7 +68,7 @@ const ModificationNode = styled.div<{ $angle: number; $type: string }>`
     transform: translate(-50%, -50%) scale(1.2);
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
   }
-  z-index: 2;
+  z-index: 10;
   pointer-events: all;
 `;
 
@@ -77,6 +77,7 @@ const ModificationHandleContainer = styled.div`
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 1;
   > * {
     pointer-events: all;
   }
@@ -135,7 +136,12 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
     // Only show context menu for admin users
     if (!isAdmin) return;
     
-    setSelectedModification(null);
+    // Only clear selectedModification if clicking on the node itself, not on a modification
+    const target = event.target as HTMLElement;
+    if (!target.closest('.modification-node')) {
+      setSelectedModification(null);
+    }
+    
     setContextMenu(
       contextMenu === null
         ? {
@@ -158,9 +164,14 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
 
   const handleModificationClick = (event: React.MouseEvent, mod: ProteinModification) => {
     event.stopPropagation();
+    event.preventDefault();
     // Only allow modification management for admin users
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      console.log('User is not admin, cannot manage modifications');
+      return;
+    }
     
+    console.log('Modification clicked:', mod);
     setSelectedModification(mod);
     setContextMenu({
       mouseX: event.clientX - 2,
@@ -169,26 +180,56 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
   };
 
   const handleModificationSubmit = async (formData: Omit<ProteinModification, '_id' | 'proteinId' | 'createdAt' | 'updatedAt'>) => {
+    console.log('handleModificationSubmit called with:', formData);
+    console.log('selectedModification:', selectedModification);
+    console.log('proteinId:', data._id);
+    
     try {
+      let result;
       if (selectedModification) {
-        await proteinModificationService.update(selectedModification._id, formData);
+        console.log('Updating modification:', selectedModification._id);
+        result = await proteinModificationService.update(selectedModification._id, formData);
       } else {
-        await proteinModificationService.create(data._id, formData);
+        console.log('Creating new modification for protein:', data._id);
+        result = await proteinModificationService.create(data._id, formData);
       }
+      console.log('Modification saved successfully:', result);
       await loadModifications();
       setShowModificationForm(false);
-    } catch (error) {
+      setSelectedModification(null);
+    } catch (error: any) {
       console.error('Failed to save modification:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to save modification';
+      alert(`Error: ${errorMessage}`);
+      throw error; // Re-throw to let the form handle it
     }
   };
 
   const handleDeleteModification = async (mod: ProteinModification) => {
+    // Confirm deletion
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the modification "${mod.type} at ${mod.position}"?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
     try {
+      console.log('Deleting modification:', mod._id);
       await proteinModificationService.delete(mod._id);
+      console.log('Modification deleted successfully');
       await loadModifications();
       handleClose();
-    } catch (error) {
+      setSelectedModification(null);
+    } catch (error: any) {
       console.error('Failed to delete modification:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete modification';
+      alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -241,12 +282,18 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
               <ModificationNode
                 $angle={angle}
                 $type={mod.type}
+                className="modification-node"
                 style={{
                   left: `calc(50% + ${endX}px)`,
                   top: `calc(50% + ${endY}px)`,
                 }}
                 onClick={(e) => handleModificationClick(e, mod)}
-                title={`${mod.type} at ${mod.position}`}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleModificationClick(e, mod);
+                }}
+                title={`${mod.type} at ${mod.position}${isAdmin ? ' (Click to edit/delete)' : ''}`}
               />
               <ModificationHandleContainer
                 style={{
@@ -289,7 +336,10 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
       {isAdmin && (
         <Menu
           open={contextMenu !== null}
-          onClose={handleClose}
+          onClose={() => {
+            handleClose();
+            setSelectedModification(null);
+          }}
           anchorReference="anchorPosition"
           anchorPosition={
             contextMenu !== null
@@ -300,6 +350,7 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
           {selectedModification ? (
             <>
               <MenuItem onClick={() => {
+                console.log('Edit clicked for modification:', selectedModification);
                 setShowModificationForm(true);
                 handleClose();
               }}>
@@ -307,6 +358,7 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
               </MenuItem>
               <MenuItem 
                 onClick={() => {
+                  console.log('Delete clicked for modification:', selectedModification);
                   handleDeleteModification(selectedModification);
                 }} 
                 style={{ color: '#d32f2f' }}
