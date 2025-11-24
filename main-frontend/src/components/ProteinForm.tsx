@@ -50,6 +50,47 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
     loadAvailableProteins();
   }, []);
 
+  // Remove focus from buttons and React Flow nodes when dialog opens
+  useEffect(() => {
+    if (open) {
+      // Remove focus immediately, synchronously, before Dialog sets aria-hidden
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement) {
+        activeElement.blur();
+      }
+      
+      // Remove focus from all buttons
+      const buttons = document.querySelectorAll('.MuiButtonBase-root, .MuiButton-root, .MuiMenuItem-root');
+      buttons.forEach(button => {
+        (button as HTMLElement).blur();
+      });
+      
+      // Remove focus from all React Flow nodes (if any)
+      const allNodes = document.querySelectorAll('.react-flow__node');
+      allNodes.forEach(node => {
+        (node as HTMLElement).blur();
+        (node as HTMLElement).classList.remove('selected');
+      });
+      
+      // Remove focus from handles
+      const handles = document.querySelectorAll('.react-flow__handle');
+      handles.forEach(handle => {
+        (handle as HTMLElement).blur();
+      });
+      
+      // Remove focus from any Select native inputs
+      const selectInputs = document.querySelectorAll('.MuiSelect-nativeInput');
+      selectInputs.forEach(input => {
+        (input as HTMLElement).blur();
+      });
+      
+      // Force focus to body to ensure nothing has focus
+      if (document.activeElement && document.activeElement !== document.body) {
+        (document.activeElement as HTMLElement).blur();
+      }
+    }
+  }, [open]);
+
   const loadAvailableProteins = async () => {
         try {
       const proteins = await proteinApi.getAll();
@@ -81,10 +122,21 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
 
   const handleInteractionChange = (index: number, field: keyof ProteinInteraction, value: any) => {
     const newInteractions = [...formData.interactions];
+    if (field === 'targetModification') {
+      // 处理targetModification对象
+      newInteractions[index] = {
+        ...newInteractions[index],
+        targetModification: value ? {
+          position: value.position || '',
+          type: value.type || ''
+        } : undefined
+      };
+    } else {
     newInteractions[index] = {
       ...newInteractions[index],
       [field]: value
     };
+    }
     setFormData(prev => ({
       ...prev,
       interactions: newInteractions
@@ -125,8 +177,26 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
     onSubmit(formData);
   };
 
+  const handleDialogClose = (event: {}, reason: 'backdropClick' | 'escapeKeyDown' | 'closeButtonClick') => {
+    // Remove focus from dialog when closing
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.closest('[role="dialog"]')) {
+        activeElement.blur();
+      }
+    }
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleDialogClose} 
+      maxWidth="md" 
+      fullWidth
+      disableEnforceFocus={false}
+      disableAutoFocus={true}
+    >
         <form onSubmit={handleSubmit}>
         <DialogTitle>
           {initialData._id ? 'Edit Protein' : 'Add New Protein'}
@@ -237,6 +307,33 @@ export const ProteinForm: React.FC<ProteinFormProps> = ({
                       rows={2}
                       fullWidth
                     />
+                    {interaction.targetId && proteinModifications[interaction.targetId] && proteinModifications[interaction.targetId].length > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        <FormControl fullWidth>
+                          <InputLabel>Target Modification (Optional)</InputLabel>
+                          <Select
+                            value={interaction.targetModification ? `${interaction.targetModification.type}-${interaction.targetModification.position}` : ''}
+                            label="Target Modification (Optional)"
+                            onChange={e => {
+                              const value = e.target.value;
+                              if (value) {
+                                const [type, position] = value.split('-');
+                                handleInteractionChange(index, 'targetModification', { type, position });
+                              } else {
+                                handleInteractionChange(index, 'targetModification', null);
+                              }
+                            }}
+                          >
+                            <MenuItem value="">None</MenuItem>
+                            {proteinModifications[interaction.targetId].map((mod: any) => (
+                              <MenuItem key={mod._id} value={`${mod.type}-${mod.position}`}>
+                                {mod.type} at {mod.position}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+                    )}
                   </Collapse>
                 </Box>
               ))}

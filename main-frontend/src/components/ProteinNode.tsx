@@ -34,6 +34,7 @@ const ModificationContainer = styled.div`
   height: 100%;
   left: 0;
   top: 0;
+  z-index: 1;
 `;
 
 const ModificationBranch = styled.div<{ $angle: number }>`
@@ -156,10 +157,54 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
     setContextMenu(null);
   };
 
-  const handleAddModification = () => {
+  const handleAddModification = (event?: React.MouseEvent) => {
     setSelectedModification(null);
-    setShowModificationForm(true);
     handleClose();
+    
+    // Remove focus from the clicked button immediately
+    if (event?.currentTarget) {
+      (event.currentTarget as HTMLElement).blur();
+    }
+    
+    // Remove focus from the node BEFORE opening dialog
+    // Use setTimeout to ensure this happens before React re-renders
+    setTimeout(() => {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement) {
+        activeElement.blur();
+      }
+      
+      // Remove focus from all buttons (MenuItem buttons)
+      const buttons = document.querySelectorAll('.MuiButtonBase-root, .MuiMenuItem-root');
+      buttons.forEach(button => {
+        (button as HTMLElement).blur();
+      });
+      
+      // Remove focus from the node container
+      if (nodeRef.current) {
+        nodeRef.current.blur();
+      }
+      
+      // Remove focus from all React Flow nodes
+      const allNodes = document.querySelectorAll('.react-flow__node');
+      allNodes.forEach(node => {
+        (node as HTMLElement).blur();
+        (node as HTMLElement).classList.remove('selected');
+      });
+      
+      // Remove focus from handles
+      const handles = document.querySelectorAll('.react-flow__handle');
+      handles.forEach(handle => {
+        (handle as HTMLElement).blur();
+      });
+      
+      // Force focus to body
+      document.body.focus();
+      document.body.blur();
+      
+      // Now open the dialog after focus is removed
+      setShowModificationForm(true);
+    }, 0);
   };
 
   const handleModificationClick = (event: React.MouseEvent, mod: ProteinModification) => {
@@ -242,7 +287,11 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
   };
 
   return (
-    <NodeContainer ref={nodeRef} onContextMenu={handleContextMenu}>
+    <NodeContainer 
+      ref={nodeRef} 
+      onContextMenu={handleContextMenu}
+      style={{ pointerEvents: 'auto' }}
+    >
       <Handle type="target" position={Position.Top} />
       <ProteinName>{data.name}</ProteinName>
 
@@ -301,6 +350,7 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
                   top: `calc(50% + ${endY}px)`,
                 }}
               >
+                {/* Source handles for outgoing connections */}
                 <Handle
                   type="source"
                   position={Position.Top}
@@ -323,6 +373,31 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
                   type="source"
                   position={Position.Left}
                   id={`${mod._id}-left`}
+                  style={{ top: 0, left: -6 }}
+                />
+                {/* Target handles for incoming connections */}
+                <Handle
+                  type="target"
+                  position={Position.Top}
+                  id={`${mod._id}-target-top`}
+                  style={{ top: -6, left: 0 }}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Right}
+                  id={`${mod._id}-target-right`}
+                  style={{ top: 0, left: 6 }}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Bottom}
+                  id={`${mod._id}-target-bottom`}
+                  style={{ top: 6, left: 0 }}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id={`${mod._id}-target-left`}
                   style={{ top: 0, left: -6 }}
                 />
               </ModificationHandleContainer>
@@ -349,25 +424,85 @@ const ProteinNode: React.FC<ProteinNodeProps> = ({ data }) => {
         >
           {selectedModification ? (
             <>
-              <MenuItem onClick={() => {
-                console.log('Edit clicked for modification:', selectedModification);
-                setShowModificationForm(true);
-                handleClose();
-              }}>
+              <MenuItem 
+                onClick={(e) => {
+                  console.log('Edit clicked for modification:', selectedModification);
+                  e.currentTarget.blur();
+                  handleClose();
+                  
+                  // Remove focus before opening dialog
+                  setTimeout(() => {
+                    const activeElement = document.activeElement as HTMLElement;
+                    if (activeElement) {
+                      activeElement.blur();
+                    }
+                    
+                    // Remove focus from all buttons
+                    const buttons = document.querySelectorAll('.MuiButtonBase-root, .MuiMenuItem-root');
+                    buttons.forEach(button => {
+                      (button as HTMLElement).blur();
+                    });
+                    
+                    if (nodeRef.current) {
+                      nodeRef.current.blur();
+                    }
+                    
+                    // Remove focus from all React Flow nodes
+                    const allNodes = document.querySelectorAll('.react-flow__node');
+                    allNodes.forEach(node => {
+                      (node as HTMLElement).blur();
+                      (node as HTMLElement).classList.remove('selected');
+                    });
+                    
+                    // Remove focus from handles
+                    const handles = document.querySelectorAll('.react-flow__handle');
+                    handles.forEach(handle => {
+                      (handle as HTMLElement).blur();
+                    });
+                    
+                    // Force focus to body
+                    document.body.focus();
+                    document.body.blur();
+                    
+                    // Now open the dialog after focus is removed
+                    setShowModificationForm(true);
+                  }, 0);
+                }}
+                onMouseDown={(e) => {
+                  // Prevent focus on mousedown
+                  e.preventDefault();
+                }}
+              >
                 Edit Modification
               </MenuItem>
               <MenuItem 
-                onClick={() => {
+                onClick={(e) => {
                   console.log('Delete clicked for modification:', selectedModification);
+                  e.currentTarget.blur();
                   handleDeleteModification(selectedModification);
-                }} 
+                }}
+                onMouseDown={(e) => {
+                  // Prevent focus on mousedown
+                  e.preventDefault();
+                }}
                 style={{ color: '#d32f2f' }}
               >
                 Delete Modification
               </MenuItem>
             </>
           ) : (
-            <MenuItem onClick={handleAddModification}>Add Modification</MenuItem>
+            <MenuItem 
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleAddModification(e);
+              }}
+              onMouseDown={(e) => {
+                // Prevent focus on mousedown
+                e.preventDefault();
+              }}
+            >
+              Add Modification
+            </MenuItem>
           )}
         </Menu>
       )}

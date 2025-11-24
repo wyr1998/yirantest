@@ -6,6 +6,7 @@ import { Protein, ProteinPositions } from '../types';
 import ProteinNode from '../components/ProteinNode';
 import { proteinApi } from '../services/api';
 import { proteinPositionService } from '../services/proteinPositionService';
+import { proteinModificationService } from '../services/proteinModificationService';
 
 const PageContainer = styled.div`
   width: 100vw;
@@ -54,6 +55,7 @@ const NHEJPathway: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [proteinModifications, setProteinModifications] = useState<{[key: string]: any[]}>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,9 +68,22 @@ const NHEJPathway: React.FC = () => {
         // Filter proteins where pathway is 'NHEJ'
         const proteinData = allProteins.filter(p => p.pathway === 'NHEJ');
         setProteins(proteinData);
+        
+        // Load modifications for all proteins
+        const modificationsMap: {[key: string]: any[]} = {};
+        await Promise.all(proteinData.map(async (protein) => {
+          try {
+            const mods = await proteinModificationService.getByProteinId(protein._id);
+            modificationsMap[protein._id] = mods;
+          } catch (err) {
+            modificationsMap[protein._id] = [];
+          }
+        }));
+        setProteinModifications(modificationsMap);
+        
         // Create nodes with saved positions or default positions
         const initialNodes: Node[] = proteinData.map((protein, index) => {
-          const savedPosition = positionData[protein._id];
+          const savedPosition = positionData[protein._id] || positionData[protein.name];
           const defaultPosition = { x: 100 + index * 200, y: 100 + index * 100 };
           return {
             id: protein._id,
@@ -89,28 +104,82 @@ const NHEJPathway: React.FC = () => {
 
   // Memoize edges to prevent recreation on every render
   const edges = useMemo(() => {
-    const allEdges: Edge[] = proteins.flatMap((protein) =>
+    const allEdges: Edge[] = [];
+    
+    // Protein to protein edges
+    proteins.forEach((protein) => {
       protein.interactions
         .filter(interaction => proteins.some(p => p._id === interaction.targetId))
-        .map((interaction) => {
+        .forEach((interaction) => {
           const targetProtein = proteins.find(p => p._id === interaction.targetId);
-          return {
-            id: `${protein._id}-${targetProtein?._id}`,
+          if (!targetProtein) return;
+          
+          // If interaction has targetModification, create edge from source modification to target protein
+          if (interaction.targetModification) {
+            const sourceMods = proteinModifications[protein._id] || [];
+            
+            // Connect from source modification dot to target protein
+            if (sourceMods.length > 0) {
+              // Connect from source modification dot to target protein
+              const sourceMod = sourceMods[0]; // Use first modification
+              allEdges.push({
+                id: `${sourceMod._id}-${targetProtein._id}`,
+                source: protein._id,
+                sourceHandle: `${sourceMod._id}-right`,
+                target: targetProtein._id,
+                animated: true,
+                type: interaction.type,
+                style: { stroke: '#9C27B0', strokeWidth: 2 },
+                data: {
+                  description: interaction.description,
+                  targetModification: interaction.targetModification,
+                  fromModification: true
+                }
+              });
+            } else {
+              // No source modification, connect from source protein to target protein
+              // But still use purple color to indicate it's a modification-related interaction
+              allEdges.push({
+                id: `${protein._id}-${targetProtein._id}-mod`,
+                source: protein._id,
+                target: targetProtein._id,
+                animated: true,
+                type: interaction.type,
+                style: { stroke: '#9C27B0', strokeWidth: 2 },
+                data: {
+                  description: interaction.description,
+                  targetModification: interaction.targetModification,
+                  hasTargetModification: true
+                }
+              });
+            }
+          } else {
+            // Regular protein-to-protein edge
+            allEdges.push({
+              id: `${protein._id}-${targetProtein._id}`,
             source: protein._id,
-            target: targetProtein?._id || '',
+              target: targetProtein._id,
             animated: true,
             type: interaction.type,
             data: {
               description: interaction.description,
               targetModification: interaction.targetModification
             }
-          };
-        })
-    );
-    // 去重：只保留一条A-B或B-A
+            });
+          }
+        });
+    });
+    
+    // 去重：只保留一条A-B或B-A（但不包括modification edges）
     const uniqueEdges: Edge[] = [];
     const seen = new Set();
     for (const edge of allEdges) {
+      // Modification edges are unique by their ID, don't deduplicate them
+      if (edge.data?.fromModification || edge.data?.hasTargetModification) {
+        uniqueEdges.push(edge);
+        continue;
+      }
+      
       const key1 = `${edge.source}-${edge.target}`;
       const key2 = `${edge.target}-${edge.source}`;
       if (!seen.has(key1) && !seen.has(key2)) {
@@ -120,32 +189,32 @@ const NHEJPathway: React.FC = () => {
       }
     }
     return uniqueEdges;
-  }, [proteins]);
+  }, [proteins, proteinModifications]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       setNodes((nds) => {
         const updatedNodes = applyNodeChanges(changes, nds);
-        
-        // Auto-save positions when nodes are moved
-        const positionChanges = changes.filter(change => change.type === 'position');
-        if (positionChanges.length > 0) {
-          const newPositions: ProteinPositions = {};
+      
+      // Auto-save positions when nodes are moved
+      const positionChanges = changes.filter(change => change.type === 'position');
+      if (positionChanges.length > 0) {
+        const newPositions: ProteinPositions = {};
           updatedNodes.forEach(node => {
-            newPositions[node.id] = node.position;
-          });
-          
-          // Debounce the save operation
-          setTimeout(() => {
-            proteinPositionService.saveProteinPositions('NHEJ', newPositions)
+          newPositions[node.id] = node.position;
+        });
+        
+        // Debounce the save operation
+        setTimeout(() => {
+          proteinPositionService.saveProteinPositions('NHEJ', newPositions)
               .catch(error => {
                 console.error('Failed to save positions:', error);
                 if (error.message?.includes('Authentication required')) {
                   console.warn('Please log in as admin to save protein positions');
                 }
               });
-          }, 1000);
-        }
+        }, 1000);
+      }
         
         return updatedNodes;
       });
@@ -154,10 +223,14 @@ const NHEJPathway: React.FC = () => {
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    console.log('Node clicked:', node.id);
     // Set selected protein to show details in the panel
     const clickedProtein = proteins.find(p => p._id === node.id);
     if (clickedProtein) {
+      console.log('Setting selected protein:', clickedProtein.name);
       setSelectedProtein(clickedProtein);
+    } else {
+      console.log('Protein not found for node:', node.id);
     }
   }, [proteins]);
 

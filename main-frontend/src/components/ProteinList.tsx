@@ -110,6 +110,14 @@ const ProteinList: React.FC = () => {
           variant="contained" 
           color="primary" 
           sx={{ mb: 2 }}
+          onMouseDown={(e) => {
+            // Prevent focus on mousedown to avoid aria-hidden warning
+            e.preventDefault();
+          }}
+          onClick={(e) => {
+            // Remove focus before navigation
+            (e.currentTarget as HTMLElement).blur();
+          }}
         >
           Add New Protein
         </Button>

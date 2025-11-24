@@ -37,7 +37,7 @@ export const blogService = {
     try {
       const response = await api.get(`${API_BASE}/admin/${id}`);
       const post = response.data;
-      return { ...post, id: post._id || post.id };
+    return { ...post, id: post._id || post.id };
     } catch (error) {
       return null;
     }

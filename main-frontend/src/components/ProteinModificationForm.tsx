@@ -54,29 +54,81 @@ export const ProteinModificationForm: React.FC<ProteinModificationFormProps> = (
         description: initialData.description || '',
         effect: initialData.effect || ''
       });
+      
     }
   }, [open, initialData]);
 
-  // Handle focus management when dialog opens
-  const handleDialogEntered = () => {
-    // Remove focus from React Flow nodes to fix aria-hidden warning
-    const activeElement = document.activeElement as HTMLElement;
-    if (activeElement && (
-      activeElement.classList.contains('react-flow__node') ||
-      activeElement.closest('.react-flow__node')
-    )) {
-      activeElement.blur();
-    }
-    
-    // Focus the first input in the dialog
-    setTimeout(() => {
-      if (selectRef.current) {
-        const input = selectRef.current.querySelector('input') as HTMLElement;
-        if (input) {
-          input.focus();
-        }
+  // Remove focus from React Flow nodes when dialog opens
+  // This runs synchronously when open changes to true, before Dialog renders
+  useEffect(() => {
+    if (open) {
+      // Remove focus immediately, synchronously, before Dialog sets aria-hidden
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && (
+        activeElement.classList.contains('react-flow__node') ||
+        activeElement.closest('.react-flow__node') ||
+        activeElement.closest('.react-flow')
+      )) {
+        activeElement.blur();
       }
-    }, 0);
+      
+      // Remove focus from all React Flow nodes
+      const allNodes = document.querySelectorAll('.react-flow__node');
+      allNodes.forEach(node => {
+        (node as HTMLElement).blur();
+        (node as HTMLElement).classList.remove('selected');
+      });
+      
+      // Remove focus from handles
+      const handles = document.querySelectorAll('.react-flow__handle');
+      handles.forEach(handle => {
+        (handle as HTMLElement).blur();
+      });
+      
+      // Remove focus from any Select native inputs
+      const selectInputs = document.querySelectorAll('.MuiSelect-nativeInput');
+      selectInputs.forEach(input => {
+        (input as HTMLElement).blur();
+      });
+      
+      // Force focus to body to ensure nothing has focus
+      // This must happen before Dialog renders
+      if (document.activeElement && document.activeElement !== document.body) {
+        (document.activeElement as HTMLElement).blur();
+      }
+    }
+  }, [open]);
+
+  // Handle focus management when dialog fully opens
+  const handleDialogEntered = () => {
+    // Wait for Dialog to fully render and remove aria-hidden before focusing
+    // Use multiple requestAnimationFrame to ensure Dialog's aria-hidden is removed
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // Remove focus from any Select native inputs that might have auto-focused
+        const selectInputs = document.querySelectorAll('.MuiSelect-nativeInput');
+        selectInputs.forEach(input => {
+          (input as HTMLElement).blur();
+        });
+        
+        // Focus the first input in the dialog after it's fully rendered
+        setTimeout(() => {
+          if (selectRef.current) {
+            // Try to focus the select button instead of the native input
+            const selectButton = selectRef.current.querySelector('[role="button"]') as HTMLElement;
+            if (selectButton) {
+              selectButton.focus();
+            } else {
+              // Fallback to input if button not found
+              const input = selectRef.current.querySelector('input') as HTMLElement;
+              if (input && !input.classList.contains('MuiSelect-nativeInput')) {
+                input.focus();
+              }
+            }
+          }
+        }, 200);
+      });
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -96,6 +148,7 @@ export const ProteinModificationForm: React.FC<ProteinModificationFormProps> = (
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('handleSubmit called', e);
     e.preventDefault();
     e.stopPropagation();
     
@@ -106,6 +159,7 @@ export const ProteinModificationForm: React.FC<ProteinModificationFormProps> = (
     }
     
     console.log('Submitting form with data:', formData);
+    console.log('onSubmit function:', onSubmit);
     
     try {
       const result = onSubmit(formData);
@@ -113,6 +167,8 @@ export const ProteinModificationForm: React.FC<ProteinModificationFormProps> = (
         await result;
       }
       console.log('Form submitted successfully');
+      // Close the dialog after successful submission
+      onClose();
       // Reset form after successful submit (only if not editing)
       if (!initialData._id) {
         setFormData({
@@ -130,14 +186,33 @@ export const ProteinModificationForm: React.FC<ProteinModificationFormProps> = (
     }
   };
 
+  const handleDialogClose = (event: {}, reason: 'backdropClick' | 'escapeKeyDown' | 'closeButtonClick') => {
+    // Remove focus from dialog when closing
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.closest('[role="dialog"]')) {
+        activeElement.blur();
+      }
+    }
+    onClose();
+  };
+
   return (
     <Dialog 
       open={open} 
-      onClose={onClose} 
+      onClose={handleDialogClose} 
       maxWidth="sm" 
       fullWidth
+      disableEnforceFocus={false}
+      disableAutoFocus={true}
       TransitionProps={{
         onEntered: handleDialogEntered
+      }}
+      PaperProps={{
+        onMouseDown: (e) => {
+          // Prevent focus from going back to React Flow when clicking in dialog
+          e.stopPropagation();
+        }
       }}
     >
       <form onSubmit={handleSubmit}>
@@ -152,6 +227,11 @@ export const ProteinModificationForm: React.FC<ProteinModificationFormProps> = (
                 value={formData.type}
                 onChange={handleSelectChange}
                 label="Modification Type"
+                autoFocus={false}
+                MenuProps={{
+                  disableAutoFocus: true,
+                  disableEnforceFocus: true
+                }}
               >
                 {MODIFICATION_TYPES.map(type => (
                   <MenuItem key={type} value={type}>
@@ -196,7 +276,15 @@ export const ProteinModificationForm: React.FC<ProteinModificationFormProps> = (
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" color="primary">
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary"
+            onClick={(e) => {
+              console.log('Add button clicked');
+              // Let the form handle the submit
+            }}
+          >
             {initialData._id ? 'Update' : 'Add'}
           </Button>
         </DialogActions>
